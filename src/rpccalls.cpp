@@ -25,7 +25,7 @@ m_http_client.set_server(
 }
 
 bool
-rpccalls::connect_to_monero_deamon()
+rpccalls::connect_to_bittube_deamon()
 {
     if(m_http_client.is_connected())
     {
@@ -43,7 +43,7 @@ rpccalls::get_current_height()
 
     std::lock_guard<std::mutex> guard(m_daemon_rpc_mutex);
 
-    if (!connect_to_monero_deamon())
+    if (!connect_to_bittube_deamon())
     {
         cerr << "get_current_height: not connected to deamon" << endl;
         return false;
@@ -76,7 +76,7 @@ rpccalls::get_mempool(vector<tx_info>& mempool_txs)
 
     std::lock_guard<std::mutex> guard(m_daemon_rpc_mutex);
 
-    if (!connect_to_monero_deamon())
+    if (!connect_to_bittube_deamon())
     {
         cerr << "get_current_height: not connected to deamon" << endl;
         return false;
@@ -115,7 +115,7 @@ rpccalls::get_random_outs_for_amounts(
 
     std::lock_guard<std::mutex> guard(m_daemon_rpc_mutex);
 
-    if (!connect_to_monero_deamon())
+    if (!connect_to_bittube_deamon())
     {
         cerr << "get_current_height: not connected to deamon" << endl;
         return false;
@@ -193,7 +193,7 @@ rpccalls::commit_tx(
 
     std::lock_guard<std::mutex> guard(m_daemon_rpc_mutex);
 
-    if (!connect_to_monero_deamon())
+    if (!connect_to_bittube_deamon())
     {
         cerr << "get_current_height: not connected to deamon" << endl;
         return false;
@@ -252,7 +252,7 @@ rpccalls::get_dynamic_per_kb_fee_estimate(
 
     std::lock_guard<std::mutex> guard(m_daemon_rpc_mutex);
 
-    if (!connect_to_monero_deamon())
+    if (!connect_to_bittube_deamon())
     {
         cerr << "get_current_height: not connected to deamon" << endl;
         return false;

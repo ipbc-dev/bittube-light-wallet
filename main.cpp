@@ -97,7 +97,7 @@ bc_setup.import_fee                         = config_json["wallet_import"]["fee"
 string deamon_url;
 
 // get blockchain path
-// if confing.json paths are emtpy, defeault monero
+// if confing.json paths are emtpy, defeault bittube
 // paths are going to be used
 path blockchain_path;
 
@@ -171,12 +171,12 @@ auto current_bc_status = make_shared<xmreg::CurrentBlockchainStatus>(bc_setup);
 // since CurrentBlockchainStatus class monitors current status
 // of the blockchain (e.g., current height), its seems logical to
 // make static objects for accessing the blockchain in this class.
-// this way monero accessing blockchain variables (i.e. mcore and core_storage)
+// this way bittube accessing blockchain variables (i.e. mcore and core_storage)
 // are not passed around like crazy everywhere. Uri( "file:///tmp/dh2048.pem"
 // There are here, and this is the only class that
 // has direct access to blockchain and talks (using rpc calls)
 // with the deamon.
-if (!current_bc_status->init_monero_blockchain())
+if (!current_bc_status->init_bittube_blockchain())
 {
     cerr << "Error accessing blockchain." << endl;
     return EXIT_FAILURE;
@@ -228,7 +228,7 @@ xmreg::ThreadRAII mysql_ping_thread(
         xmreg::ThreadRAII::DtorAction::detach);
 
 // create REST JSON API services
-xmreg::YourMoneroRequests open_monero(mysql_accounts, current_bc_status);
+xmreg::YourMoneroRequests open_bittube(mysql_accounts, current_bc_status);
 
 // create Open Monero APIs
 MAKE_RESOURCE(login);

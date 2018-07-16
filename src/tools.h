@@ -13,7 +13,7 @@
 #define REMOVE_HASH_BRAKETS(a_hash) \
     a_hash.substr(1, a_hash.size()-2)
 
-#include "monero_headers.h"
+#include "bittube_headers.h"
 
 #include "../ext/format.h"
 #include "../ext/json.hpp"

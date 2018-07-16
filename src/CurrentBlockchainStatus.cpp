@@ -13,7 +13,7 @@
 
 
 #undef MONERO_DEFAULT_LOG_CATEGORY
-#define MONERO_DEFAULT_LOG_CATEGORY "openmonero"
+#define MONERO_DEFAULT_LOG_CATEGORY "bittube"
 
 namespace xmreg
 {
@@ -80,9 +80,9 @@ CurrentBlockchainStatus::update_current_blockchain_height()
 }
 
 bool
-CurrentBlockchainStatus::init_monero_blockchain()
+CurrentBlockchainStatus::init_bittube_blockchain()
 {
-    // set  monero log output level
+    // set  bittube log output level
     uint32_t log_level = 0;
     mlog_configure(mlog_get_default_log_path(""), true);
 
@@ -1057,8 +1057,8 @@ CurrentBlockchainStatus::construct_output_rct_field(
                                            // not the ones we actually spend.
             // ringct coinbase txs are special. they have identity mask.
             // as suggested by this code:
-            // https://github.com/monero-project/monero/blob/eacf2124b6822d088199179b18d4587404408e0f/src/wallet/wallet2.cpp#L893
-            // https://github.com/monero-project/monero/blob/master/src/blockchain_db/blockchain_db.cpp#L100
+            // https://github.com/bittube-project/bittube/blob/eacf2124b6822d088199179b18d4587404408e0f/src/wallet/wallet2.cpp#L893
+            // https://github.com/bittube-project/bittube/blob/master/src/blockchain_db/blockchain_db.cpp#L100
             // rtc_mask   = pod_to_hex(rct::identity());
         }
 

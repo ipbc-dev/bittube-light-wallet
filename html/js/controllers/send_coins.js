@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2017, MyMonero.com
+// Copyright (c) 2014-2017, MyBittube.com
 // 
 // All rights reserved.
 // 
@@ -326,7 +326,7 @@ thinwalletCtrls.controller('SendCoinsCtrl', function($scope, $http, $q,
                 }
 
             }
-            if (realDsts.length === 1) {//multiple destinations aren't supported by MyMonero, but don't include integrated ID anyway (possibly should error in the future)
+            if (realDsts.length === 1) {//multiple destinations aren't supported by MyBittube, but don't include integrated ID anyway (possibly should error in the future)
                 var decode_result = cnUtil.decode_address(realDsts[0].address);
                 if (decode_result.intPaymentId && payment_id) {
                     $scope.submitting = false;

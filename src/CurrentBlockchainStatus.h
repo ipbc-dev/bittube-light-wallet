@@ -65,7 +65,7 @@ public:
     update_current_blockchain_height();
 
     virtual bool
-    init_monero_blockchain();
+    init_bittube_blockchain();
 
     virtual bool
     is_tx_unlocked(uint64_t unlock_time, uint64_t block_height);
@@ -245,7 +245,7 @@ public:
 
 protected:
 
-    // parameters used to connect/read monero blockchain
+    // parameters used to connect/read bittube blockchain
     BlockchainSetup bc_setup;
 
    // since this class monitors current status

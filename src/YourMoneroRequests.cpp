@@ -191,7 +191,7 @@ YourMoneroRequests::get_address_txs(const shared_ptr< Session > session, const B
     j_response = json {
             {"total_received"         , 0},    // calculated in this function
             {"total_received_unlocked", 0},    // calculated in this function
-            {"scanned_height"         , 0},    // not used. it is here to match mymonero
+            {"scanned_height"         , 0},    // not used. it is here to match mybittube
             {"scanned_block_height"   , 0},    // taken from Accounts table
             {"scanned_block_timestamp", 0},    // taken from Accounts table
             {"start_height"           , 0},    // blockchain hieght when acc was created
@@ -389,11 +389,11 @@ YourMoneroRequests::get_address_info(const shared_ptr< Session > session, const 
             {"locked_funds"           , 0},    // locked xmr (e.g., younger than 10 blocks)
             {"total_received"         , 0},    // calculated in this function
             {"total_sent"             , 0},    // calculated in this function
-            {"scanned_height"         , 0},    // not used. it is here to match mymonero
+            {"scanned_height"         , 0},    // not used. it is here to match mybittube
             {"scanned_block_height"   , 0},    // taken from Accounts table
             {"scanned_block_timestamp", 0},    // taken from Accounts table
             {"start_height"           , 0},    // not used, but available in Accounts table.
-                                               // it is here to match mymonero
+                                               // it is here to match mybittube
             {"blockchain_height"      , 0},    // current blockchain height
             {"spent_outputs"          , nullptr} // list of spent outputs that we think
                                                // user has spent. client side will
@@ -806,7 +806,7 @@ YourMoneroRequests::get_random_outs(const shared_ptr< Session > session, const B
     else
     {
         j_response["status"] = "error";
-        j_response["error"]  = fmt::format("Error getting random outputs from monero deamon");
+        j_response["error"]  = fmt::format("Error getting random outputs from bittube deamon");
     }
 
     string response_body = j_response.dump();
@@ -1574,7 +1574,7 @@ YourMoneroRequests::get_version(const shared_ptr< Session > session, const Bytes
         {"last_git_commit_hash", string {GIT_COMMIT_HASH}},
         {"last_git_commit_date", string {GIT_COMMIT_DATETIME}},
         {"git_branch_name"     , string {GIT_BRANCH_NAME}},
-        {"monero_version_full" , string {BITTUBE_VERSION_FULL}},
+        {"bittube_version_full" , string {BITTUBE_VERSION_FULL}},
         {"api"                 , OPENMONERO_RPC_VERSION},
         {"testnet"             , current_bc_status->get_bc_setup().net_type  == network_type::TESTNET},
         {"network_type"        , current_bc_status->get_bc_setup().net_type},

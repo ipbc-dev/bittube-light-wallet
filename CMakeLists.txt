@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.2)
 
 set(PROJECT_NAME
-        openmonero)
+        bittube)
 
 project(${PROJECT_NAME})
 
@@ -12,7 +12,7 @@ if(CMAKE_SIZEOF_VOID_P EQUAL "4")
 endif()
 
 if (NOT MONERO_DIR)
-    set(MONERO_DIR ~/monero)
+    set(MONERO_DIR ~/bittube)
 endif()
 
 option(BUILD_TEST "Build tests for the project" ON)
@@ -22,7 +22,7 @@ message(STATUS MONERO_DIR ": ${MONERO_DIR}")
 set(MONERO_SOURCE_DIR ${MONERO_DIR}
         CACHE PATH "Path to the root directory for Monero")
 
-# set location of monero build tree
+# set location of bittube build tree
 set(MONERO_BUILD_DIR ${MONERO_SOURCE_DIR}/build/release/
         CACHE PATH "Path to the build directory for Monero")
 
@@ -58,7 +58,7 @@ include_directories(/usr/include/mysql)
 # include boost headers
 include_directories(${Boost_INCLUDE_DIRS})
 
-# include monero headers
+# include bittube headers
 include_directories("ext/restbed/source")
 
 include_directories(

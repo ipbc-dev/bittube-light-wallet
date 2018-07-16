@@ -6,7 +6,7 @@
 #ifndef CROWXMR_RPCCALLS_H
 #define CROWXMR_RPCCALLS_H
 
-#include "monero_headers.h"
+#include "bittube_headers.h"
 
 #include <mutex>
 
@@ -38,7 +38,7 @@ public:
              uint64_t _timeout = 200000);
 
     bool
-    connect_to_monero_deamon();
+    connect_to_bittube_deamon();
     uint64_t
     get_current_height();
 

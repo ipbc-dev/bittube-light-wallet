@@ -25,7 +25,7 @@ class OutputInputIdentificationException: public std::runtime_error
  * and searches for outputs in a given tx
  * and possible spendings/inputs.
  *
- * It is the key class for identification of incoming monero
+ * It is the key class for identification of incoming bittube
  * and candidate outcoming xmr for a user in a blockchain and in
  * mempool.
  *
