@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2017, MyItalocoin.com
+// Copyright (c) 2014-2017, MyMonero.com
 // 
 // All rights reserved.
 // 
@@ -326,7 +326,7 @@ thinwalletCtrls.controller('SendCoinsCtrl', function($scope, $http, $q,
                 }
 
             }
-            if (realDsts.length === 1) {//multiple destinations aren't supported by MyItalocoin, but don't include integrated ID anyway (possibly should error in the future)
+            if (realDsts.length === 1) {//multiple destinations aren't supported by MyMonero, but don't include integrated ID anyway (possibly should error in the future)
                 var decode_result = cnUtil.decode_address(realDsts[0].address);
                 if (decode_result.intPaymentId && payment_id) {
                     $scope.submitting = false;
@@ -605,7 +605,7 @@ thinwalletCtrls.controller('SendCoinsCtrl', function($scope, $http, $q,
                 {
                     //create random destination to keep 2 outputs always in case of 0 change
                     var fakeAddress = cnUtil.create_address(cnUtil.random_scalar()).public_addr;
-                    console.log("Sending 0 ITA to a fake address to keep tx uniform (no change exists): " + fakeAddress);
+                    console.log("Sending 0 TUBE to a fake address to keep tx uniform (no change exists): " + fakeAddress);
                     dsts.push({
                         address: fakeAddress,
                         amount: 0
