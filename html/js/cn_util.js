@@ -525,22 +525,29 @@ var cnUtil = (function(initConfig) {
     this.decode_address = function(address) {
         var dec = cnBase58.decode(address);
         var expectedPrefix = this.encode_varint(CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX);
+		
         var expectedPrefixInt = this.encode_varint(CRYPTONOTE_PUBLIC_INTEGRATED_ADDRESS_BASE58_PREFIX);
         var expectedPrefixSub = this.encode_varint(CRYPTONOTE_PUBLIC_SUBADDRESS_BASE58_PREFIX);
         var prefix = dec.slice(0, expectedPrefix.length);
-        if (prefix !== expectedPrefix && prefix !== expectedPrefixInt && prefix !== expectedPrefixSub) {
+		var prefixs = dec.slice(0, expectedPrefixInt.length);
+        if (prefix !== expectedPrefix && prefixs !== expectedPrefixInt && prefix !== expectedPrefixSub) {
             throw "Invalid address prefix";
         }
+		var decs = dec.slice(expectedPrefixInt.length);
         dec = dec.slice(expectedPrefix.length);
         var spend = dec.slice(0, 64);
         var view = dec.slice(64, 128);
-        if (prefix === expectedPrefixInt){
-            var intPaymentId = dec.slice(128, 128 + (INTEGRATED_ID_SIZE * 2));
-            var checksum = dec.slice(128 + (INTEGRATED_ID_SIZE * 2), 128 + (INTEGRATED_ID_SIZE * 2) + (ADDRESS_CHECKSUM_SIZE * 2));
-            var expectedChecksum = this.cn_fast_hash(prefix + spend + view + intPaymentId).slice(0, ADDRESS_CHECKSUM_SIZE * 2);
+        if (prefixs === expectedPrefixInt){
+            spend = decs.slice(0, 64);
+            view = decs.slice(64, 128);
+            var intPaymentId = decs.slice(128, 128 + (INTEGRATED_ID_SIZE * 2));
+            var checksum = decs.slice(128 + (INTEGRATED_ID_SIZE * 2), 128 + (INTEGRATED_ID_SIZE * 2) + (ADDRESS_CHECKSUM_SIZE * 2));
+            var expectedChecksum = this.cn_fast_hash(prefixs + spend + view + intPaymentId).slice(0, ADDRESS_CHECKSUM_SIZE * 2);
+			//console.error(decs, '<-decINT-spend->', spend, '<--integrated-address-spend-view->', view, '<-view-checksum->', checksum, '<-checksum-expectedChecksum->', expectedChecksum, '<-expectedChecksum-prefixs-->', prefix, '<-prefixs--cn_fast_hash---->', prefix + spend + view);
         } else if (prefix === expectedPrefix) {
             var checksum = dec.slice(128, 128 + (ADDRESS_CHECKSUM_SIZE * 2));
             var expectedChecksum = this.cn_fast_hash(prefix + spend + view).slice(0, ADDRESS_CHECKSUM_SIZE * 2);
+			//console.error(dec, '<-dec-spend->', spend, '<--integrated-address-spend-view->', view, '<-view-checksum->', checksum, '<-checksum-expectedChecksum->', expectedChecksum, '<-expectedChecksum-prefixs-->', prefix, '<-prefixs--cn_fast_hash---->', prefix + spend + view);
         } else {
             // if its not regular address, nor integrated, than it must be subaddress
             var checksum = dec.slice(128, 128 + (ADDRESS_CHECKSUM_SIZE * 2));
