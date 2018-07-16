@@ -3,14 +3,22 @@
     <h1 class="slider-heading">That was simple. Your Account has been created</h1>
 
     <div class="subhead-text">Already have an account?&nbsp;
-      <a class="login-link steps pointer" data-ix="display-login" show-modal="login">Login to an existing Monero account</a>
+      <a class="login-link steps pointer" data-ix="display-login" show-modal="login">Login to an existing Bittube account</a>
     </div>
   </div>
 </div>
 <div>
-  <div class="w-container create-account-container">
-    <div class="no-account-div top-box">
-      <div class="info-header middle">Take Note of your Private Login Key!</div>
+  <div class="w-container create-account-container w-row">
+    <div class="no-account-div top-box w-clear">
+	 <div class="box-40"><i class="fas fa-user"></i></div><span class="info-headers-icons">YOUR ACCOUNT</span>
+	  <div class="info-header middle">That was simple. Your Account has been created!</div>
+      <div class="no-account-text thin middle">
+	Take Note of your Private Login Key! Take Note of your Private Login Key! Take Note of your Private Login Key! Take Note of your Private Login Key! Take Note of your Private Login Key! 
+      </div>
+    </div>
+    <div class="no-account-div top-box w-clear boxes49l">
+	 <div class="box-40"><i class="fab fa-keycdn"></i></div><span class="info-headers-icons">PRIVATE LOGIN KEY</span>
+	  <div class="info-header middle">Take Note of your Private Login Key!</div>
       <div class="no-account-text thin middle">
 	Below this you will find your thirteen word "Private Login Key". Keeping this secure and private is very important, as it is
 	the only way that you will be able to login to your account. As we don't store your private login key on the server
@@ -20,26 +28,29 @@
 	safe and secure places.
       </div>
     </div>
-    <div class="no-account-div top-box">
-      <div class="info-header middle">Understand the Risks in Using this Service</div>
+    <div class="no-account-div top-box w-clear boxes49r">
+	<div class="box-40"><i class="fas fa-user-secret"></i></div><span class="info-headers-icons">CAUTION!</span>
+      <div class="info-header middle">Understand the Risks in using this Service</div>
       <div class="no-account-text thin middle">
-	This is a web-based interface that allows you to use Monero without running a full Monero node. However, because this convenience
+	This is a web-based interface that allows you to use Bittube without running a full Bittube node. However, because this convenience
 	comes at a cost: it is extremely difficult to securely deliver its code to your browser. This means that there is
 	considerable risk in using this service for large amounts!<br><br>It is recommended that you treat this service as you would treat your
-	actual wallet, and not store very large amounts in it. For long-term storage of Monero you should create a cold wallet using
-	<a href="https://moneroaddress.org/">MoneroAddress</a> or similar.
+	actual wallet, and not store very large amounts in it. For long-term storage of Bittube you should create a cold wallet using
+	<a href="https://moneroaddress.org/">BittubeAddress</a> or similar.
       </div>
     </div>
-    <div class="no-account-div upper-box">
-      <div class="info-header middle-top">Your Private Login Key</div>
+
+    <div class="no-account-div upper-box w-clear" style="clear:both">
+		<div class="box-40"><i class="fas fa-key"></i></div><span class="info-headers-icons">YOUR PRIVATE LOGIN KEY</span>
+      <div class="info-header middle">Copy Your Private Login Keys</div>
       <div class="result-text">{{mnemonic}}</div>
     </div>
-    <div class="mid-div">
+    <div class="mid-div w-clear">
       <div class="w-form formwrap login-key-form">
         <form id="email-form" name="email-form" data-name="Email Form" data-redirect="/overview.html" ng-submit="login(seed, mnemonic, mnemonic_confirmation)" >
-          <label class="info-header form middle" for="Login-Key">Confirm your Private Login Key</label>
-          <input class="w-input mnemonic-page" id="Login-Key" type="text" ng-model="mnemonic_confirmation" placeholder="Type your Private Login Key out here to confirm it" name="Login-Key" data-name="Login Key" autocomplete="off" required="">
-          <input class="w-button mnemonic-login" id="form-submit" type="submit" value="I&#39;ve written down my Private Login Key, log me in!" data-wait="Please wait...">
+          <label class="info-header form middle" for="Login-Key">Confirm your Private Login Key</label><i class="fab fa-keycdn"></i>
+         <span class="keyinput"><input class="w-input mnemonic-page" id="Login-Key" type="text" ng-model="mnemonic_confirmation" placeholder="Type your Private Login Key out here to confirm it" name="Login-Key" data-name="Login Key" autocomplete="off" required=""></span>
+          <input class="w-button mnemonic-login" id="form-submit" type="submit" value="LOGIN!" data-wait="Please wait..."><br><br><br>
         </form>
         <div class="w-form-fail" style="display: block;" ng-show="!!error">
           <p>{{error}}</p>

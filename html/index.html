@@ -7,10 +7,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="format-detection" content="telephone=no">
 
-    <title ng-bind="$root.title + ' - Open Monero'">Open Monero</title>
+    <title ng-bind="$root.title + ' - Bittube Online Wallet'">Bittube Online Wallet</title>
 
     <link href="css/screen.css" media="screen, projection" rel="stylesheet" type="text/css"/>
-    <link href="bower_components/fontawesome/css/font-awesome.min.css" rel="stylesheet" type="text/css"/>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
     <link href="css/print.css" media="print" rel="stylesheet" type="text/css"/>
     <!--[if IE]>
     <link href="css/ie.css" media="screen, projection" rel="stylesheet" type="text/css"/>
@@ -81,9 +81,9 @@
 <div class="w-nav nav" data-collapse="small" data-animation="default" data-duration="400" data-contain="1">
     <div class="w-container">
         <nav class="w-nav-menu nav-menu" role="navigation">
-            <a class="w-nav-link nav-link" ng-show="!loggedIn()" ng-class="currentPage('create-your-account')" href="#!/create-your-account">CREATE A NEW ACCOUNT</a>
-            <a class="w-nav-link nav-link" ng-show="!loggedIn()" ng-class="currentPage('support')" href="#!/support">SUPPORT</a>
-            <a class="w-nav-link nav-link pointer login" ng-show="!loggedIn()" data-ix="display-login" show-modal="login">LOG IN</a>
+            <a class="w-nav-link nav-link" ng-show="!loggedIn()" ng-class="currentPage('create-your-account')" href="#!/create-your-account"><i class="fas fa-user-plus"></i> CREATE ACCOUNT</a>
+           <a class="w-nav-link nav-link" ng-show="!loggedIn()" ng-class="currentPage('support')" href="#!/support">SUPPORT</a> 
+            <a class="w-nav-link nav-link pointer login" ng-show="!loggedIn()" data-ix="display-login" show-modal="login"><i class="fas fa-fingerprint"></i> LOG IN</a>
 
             <div class="w-dropdown" ng-show="loggedIn()" data-delay="0">
                 <div class="w-dropdown-toggle dropdown-toggle">
@@ -97,17 +97,15 @@
                     <a class="w-dropdown-link dropdown-styling pointer bottom" data-ix="display-review-account" show-modal="review-account-details">Account Details</a>
                 </nav>
             </div>
-            <a class="w-nav-link nav-link" ng-show="loggedIn()" ng-class="currentPage('support')" href="#!/support">Support</a>
-            <a class="w-nav-link nav-link" ng-show="loggedIn()" ng-class="currentPage('-')" ng-click="logout()" href="#!/">Logout</a>
+            <a class="w-nav-link nav-link" ng-show="loggedIn()" ng-class="currentPage('support')" href="#!/support"><i class="fas fa-info-circle"></i> Support</a>
+            <a class="w-nav-link nav-link" ng-show="loggedIn()" ng-class="currentPage('-')" ng-click="logout()" href="#!/"><i class="fas fa-fingerprint"></i> Logout</a>
         </nav>
         <div class="w-nav-button menu-btn">
             <div class="w-icon-nav-menu"></div>
         </div>
         <a class="w-nav-brand brand-box" ng-href="{{loggedIn() ? '#!/overview' : '#!/'}}">
-            <span style="font-size: 32px; font-weight: bold;">OPEN MONERO</span>
-            <span style="color:white" ng-show="nettype == 0"><br/>mainnet monero network</span>
-            <span style="color:white" ng-show="nettype == 1"><br/>testnet monero network</span>
-            <span style="color:white" ng-show="nettype == 2"><br/>stagenet monero network</span>
+            <img src="/images/Bit.Tube-dark-1.png" width="200">
+            <span class="mytubew">| My TUBE Wallet</span>
         </a>
     </div>
 </div>
@@ -115,30 +113,26 @@
 <section class="main-section">
     <div ng-view></div>
 </section>
+<!---
 <div class="footer-section">
     <div class="lower-footer">
         <div class="w-container">
             <div class="w-row">
-                <div class="w-col w-col-4 middle-footer">
-                    <div class="copyright-text"><a class="footer-link"  href="https://github.com/moneroexamples/restbed-xmr">Source code</a></div>
+          <div class="w-clearfix footer-link left">
+                    Copyright @ <a class="footer-link"  style="margin-left: 0; float: none;" href="https://coin.bit.tube"> BitTube</a>
                 </div>
+                <div class="w-col w-col-4 bottom-footer-column" style="float:right">
                 <div class="w-clearfix footer-link">
-                    The fontend is adapted from <a class="footer-link"  style="margin-left: 0; float: none;" href="https://mymonero.com"> MyMonero</a>
-                </div>
-                <div class="w-col w-col-4 bottom-footer-column">
-                    <!--
-                    <div class="w-clearfix footer-link">
                         <a class="footer-link" href="#/privacy-policy" ng-class="currentPage('privacy-policy')">Privacy Policy</a>
                     </div>
                     <div class="w-clearfix footer-link">
                         <a class="footer-link" href="#/terms" ng-class="currentPage('terms')">Terms of Use</a>
                     </div>
-                    -->
                 </div>
             </div>
         </div>
     </div>
-</div>
+</div> --->
 </body>
 
 </html>

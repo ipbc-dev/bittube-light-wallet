@@ -13,7 +13,7 @@
                     <div ng-show="!success_page">
                         <div class="header-div-block">
                             <h1 class="heading-contained">Send Funds</h1>
-                            <div class="subhead-text inner">Send funds to any Monero user anywhere in the world</div>
+                            <div class="subhead-text inner">Send funds to any Bittube user anywhere in the world</div>
                         </div>
                     </div>
                     <div ng-show="success_page">
@@ -32,8 +32,10 @@
         </div>
     </div>
     <div class="w-container middle-container send" ng-show="!view_only">
-        <div class="middle-div send" ng-show="!success_page">
+        <div class="middle-div send" ng-show="!success_page" style="padding-top:15px">
             <div class="w-form send-form">
+						   <span class="info-headers-icons-o">SEND MONEY</span>
+	<div class="box-41"><i class="fas fa-paper-plane"></i></div>
                 <form name="email-form" data-name="Email Form" data-redirect="/transaction-successful.html"
                       ng-submit="sendCoins(targets, mixins, payment_id)">
                     <label class="send-label" for="receiver-address">Receiver Address</label>

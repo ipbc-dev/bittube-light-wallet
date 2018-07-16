@@ -40,8 +40,8 @@ html {
 body {
   margin: 0;
   min-height: 100%;
-  background-color: #fff;
-  color: #333;
+  background-color: #ededed;
+  color: #fff;
 }
 img {
   max-width: 100%;
@@ -163,8 +163,9 @@ label {
   color: #555555;
   vertical-align: middle;
   background-color: #ffffff;
-  border: 1px solid #cccccc;
-}
+  border-bottom: 1px solid #cccccc!important;
+  border: 0px;
+  }
 .w-input:-moz-placeholder,
 .w-select:-moz-placeholder {
   color: #999999;
@@ -250,6 +251,11 @@ textarea.w-select {
   margin-right: auto;
   max-width: 940px;
 }
+
+.w-inline-block {
+  display:inline-block;
+}
+
 .w-container:before,
 .w-container:after {
   content: " ";
@@ -269,6 +275,9 @@ textarea.w-select {
 }
 .w-row:after {
   clear: both;
+}
+w-clear{
+clear:both;
 }
 .w-row .w-row {
   margin-left: 0;
@@ -1441,7 +1450,7 @@ textarea.w-select {
 }
 .w-nav {
   position: relative;
-  background: #BBB;
+  background: white;
   z-index: 1000;
 }
 .w-nav:before,
