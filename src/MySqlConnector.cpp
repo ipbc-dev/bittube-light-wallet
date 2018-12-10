@@ -33,9 +33,9 @@ MySqlConnector::MySqlConnector(Option* _option)
 }
 
 bool
-MySqlConnector::connect()
+MySqlConnector::connect(const bool force_reconnect)
 {
-    if (conn.connected())
+    if (!force_reconnect && conn.connected())
         return true;
 
     try
@@ -48,7 +48,7 @@ MySqlConnector::connect()
     }
     catch (mysqlpp::ConnectionFailed const& e)
     {
-        MYSQL_EXCEPTION_MSG(e);
+        MYSQL_EXCEPTION_MSG(e, ((MySqlConnector*)nullptr));
         return false;
     }
 

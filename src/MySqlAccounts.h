@@ -228,7 +228,7 @@ public:
         }
         catch (std::exception const& e)
         {
-            MYSQL_EXCEPTION_MSG(e);
+            MYSQL_EXCEPTION_MSG(e, conn);
         }
 
         return 0;

@@ -34,7 +34,7 @@ MysqlInputs::select_for_out(const uint64_t& output_id, vector<XmrInput>& ins)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e);
+        MYSQL_EXCEPTION_MSG(e, conn);
         //throw  e;
     }
 
@@ -69,7 +69,7 @@ MysqlOutpus::exist(const string& output_public_key_str, XmrOutput& out)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e);
+        MYSQL_EXCEPTION_MSG(e, conn);
         return false;
     }
 
@@ -99,7 +99,7 @@ MysqlTransactions::mark_spendable(const uint64_t& tx_id_no, bool spendable)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e);
+        MYSQL_EXCEPTION_MSG(e, conn);
         //throw  e;
     }
 
@@ -122,7 +122,7 @@ MysqlTransactions::delete_tx(const uint64_t& tx_id_no)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e);
+        MYSQL_EXCEPTION_MSG(e, conn);
         //throw  e;
     }
 
@@ -152,7 +152,7 @@ MysqlTransactions::exist(const uint64_t& account_id, const string& tx_hash_str, 
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e);
+        MYSQL_EXCEPTION_MSG(e, conn);
         return false;
     }
 
@@ -180,7 +180,7 @@ MysqlTransactions::get_total_recieved(const uint64_t& account_id, uint64_t& amou
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e);
+        MYSQL_EXCEPTION_MSG(e, conn);
     }
 
     return false;
@@ -207,7 +207,7 @@ MysqlPayments::select_by_payment_id(const string& payment_id, vector<XmrPayment>
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e);
+        MYSQL_EXCEPTION_MSG(e, conn);
         //throw  e;
     }
 
@@ -255,7 +255,7 @@ MySqlAccounts::select(const string& address, XmrAccount& account)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e);
+        MYSQL_EXCEPTION_MSG(e, conn);
         //throw  e;
     }
 
@@ -282,7 +282,7 @@ MySqlAccounts::insert(const T& data_to_insert)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e);;
+        MYSQL_EXCEPTION_MSG(e, conn);;
     }
 
     return 0;
@@ -319,7 +319,8 @@ MySqlAccounts::insert(const vector<T>& data_to_insert)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e);
+        MYSQL_EXCEPTION_MSG(e, conn);
+        //throw  e;
     }
 
     return 0;
@@ -350,7 +351,8 @@ MySqlAccounts::select(uint64_t account_id, vector<T>& selected_data)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e);
+        MYSQL_EXCEPTION_MSG(e, conn);
+        //throw  e;
     }
 
     return false;
@@ -396,7 +398,8 @@ MySqlAccounts::update(T const& orginal_row, T const& new_row)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e);
+        MYSQL_EXCEPTION_MSG(e, conn);
+        //throw  e;
     }
 
     return false;
@@ -445,7 +448,7 @@ MySqlAccounts::select_by_primary_id(uint64_t id, T& selected_data)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e);
+        MYSQL_EXCEPTION_MSG(e, conn);
         //throw  e;
     }
 
