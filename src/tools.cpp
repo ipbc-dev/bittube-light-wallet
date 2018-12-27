@@ -44,6 +44,7 @@ parse_str_secret_key(const string& key_str, T& secret_key)
 template bool parse_str_secret_key<crypto::secret_key>(const string& key_str, crypto::secret_key& secret_key);
 template bool parse_str_secret_key<crypto::public_key>(const string& key_str, crypto::public_key& secret_key);
 template bool parse_str_secret_key<crypto::hash>(const string& key_str, crypto::hash& secret_key);
+template bool parse_str_secret_key<crypto::hash8>(const string& key_str, crypto::hash8& secret_key);
 
 /**
  * Get transaction tx using given tx hash. Hash is represent as string here,
@@ -83,25 +84,13 @@ parse_str_address(const string& address_str,
 
     if (!get_account_address_from_str(address_info, net_type, address_str))
     {
-        cerr << "Error getting address: " << address_str << '\n';
+        //cerr << "Error getting address: " << address_str << '\n';
         return false;
     }
 
     return true;
 }
 
-
-
-/**
- * Return string representation of bittube address
- */
-string
-print_address(const address_parse_info& address_info, network_type net_type)
-{
-    return "<" + get_account_address_as_str(
-            net_type, address_info.is_subaddress, address_info.address)
-           + ">";
-}
 
 string
 print_sig (const signature& sig)
@@ -296,7 +285,19 @@ get_blockchain_path(bf::path& blockchain_path,
     return true;
 }
 
+bool
+get_blockchain_path(string& blockchain_path,
+                    cryptonote::network_type nettype)
+{
+    bf::path p {blockchain_path};
 
+    if (!get_blockchain_path(p, nettype))
+        return false;
+
+    blockchain_path = p.string();
+
+    return true;
+}
 
 
 array<uint64_t, 4>
@@ -710,12 +711,30 @@ get_payment_id(const vector<uint8_t>& extra,
 }
 
 
+// just a copy from bool
+// device_default::encrypt_payment_id(crypto::hash8 &payment_id, const crypto::public_key &public_key, const crypto::secret_key &secret_key)
 bool
-get_payment_id(const transaction& tx,
-               crypto::hash& payment_id,
-               crypto::hash8& payment_id8)
+encrypt_payment_id(crypto::hash8 &payment_id,
+                   const crypto::public_key &public_key,
+                   const crypto::secret_key &secret_key)
 {
-    return get_payment_id(tx.extra, payment_id, payment_id8);
+    #define ENCRYPTED_PAYMENT_ID_TAIL 0x8d
+
+    crypto::key_derivation derivation;
+    crypto::hash hash;
+    char data[33]; /* A hash, and an extra byte */
+
+    if (!generate_key_derivation(public_key, secret_key, derivation))
+        return false;
+
+    memcpy(data, &derivation, 32);
+    data[32] = ENCRYPTED_PAYMENT_ID_TAIL;
+    cn_fast_hash(data, 33, hash);
+
+    for (size_t b = 0; b < 8; ++b)
+        payment_id.data[b] ^= hash.data[b];
+
+    return true;
 }
 
 
@@ -820,24 +839,36 @@ decode_ringct(const rct::rctSig& rv,
         return false;
     }
 
-    crypto::secret_key scalar1;
+    return decode_ringct(rv, derivation, i, mask, amount);
+}
 
-    crypto::derivation_to_scalar(derivation, i, scalar1);
 
+bool
+decode_ringct(rct::rctSig const& rv,
+              crypto::key_derivation const& derivation,
+              unsigned int i,
+              rct::key& mask,
+              uint64_t& amount)
+{
     try
     {
+        crypto::secret_key scalar1;
+
+        crypto::derivation_to_scalar(derivation, i, scalar1);
+
         switch (rv.type)
         {
             case rct::RCTTypeSimple:
             case rct::RCTTypeSimpleBulletproof:
+            case rct::RCTTypeBulletproof:
                 amount = rct::decodeRctSimple(rv,
                                               rct::sk2rct(scalar1),
                                               i,
                                               mask,
                                               hw::get_device("default"));
                 break;
+            case rct::RCTTypeFullBulletproof:    
             case rct::RCTTypeFull:
-            case rct::RCTTypeFullBulletproof:
                 amount = rct::decodeRct(rv,
                                         rct::sk2rct(scalar1),
                                         i,
@@ -845,18 +876,19 @@ decode_ringct(const rct::rctSig& rv,
                                         hw::get_device("default"));
                 break;
             default:
-                cerr << "Unsupported rct type: " << rv.type << endl;
+                cerr << "Unsupported rct type: " << rv.type << '\n';
                 return false;
         }
     }
-    catch (const std::exception &e)
+    catch (...)
     {
-        cerr << "Failed to decode input " << i << endl;
+        cerr << "Failed to decode input " << i << '\n';
         return false;
     }
 
     return true;
 }
+
 
 bool
 url_decode(const std::string& in, std::string& out)
@@ -974,7 +1006,7 @@ get_tx_pub_key_from_received_outs(const transaction &tx)
 string
 xmr_amount_to_str(const uint64_t& xmr_amount, string format)
 {
-    return fmt::format("{:0.12f}", XMR_AMOUNT(xmr_amount));
+    return fmt::format(format, XMR_AMOUNT(xmr_amount));
 }
 
 
@@ -1031,19 +1063,6 @@ is_output_ours(const size_t& output_index,
 }
 
 
-bool
-get_real_output_for_key_image(const key_image& ki,
-                              const transaction& tx,
-                              const secret_key& private_view_key,
-                              const public_key& public_spend_key,
-                              uint64_t output_idx,
-                              public_key output_pub_key)
-{
-
-
-
-    return false;
-}
 
 
 bool
@@ -1351,6 +1370,226 @@ tx_to_hex(transaction const& tx)
 {
     return epee::string_tools::buff_to_hex_nodelimer(t_serializable_object_to_blob(tx));
 }
+
+bool
+hex_to_tx_blob(string const& tx_hex, string& tx_blob)
+{
+    return epee::string_tools::parse_hexstr_to_binbuff(tx_hex, tx_blob);
+}
+
+bool
+hex_to_complete_block(string const& cblk_str,
+                      block_complete_entry& cblk)
+{
+    cryptonote::blobdata cblk_blob;
+
+    if (!epee::string_tools::parse_hexstr_to_binbuff(
+                cblk_str, cblk_blob))
+        return false;
+
+    if (!epee::serialization::load_t_from_binary(cblk, cblk_blob))
+        return false;
+
+    return true;
+}
+
+bool
+hex_to_complete_block(vector<string> const& cblks_str,
+                      vector<block_complete_entry>& cblks)
+{
+    for (auto const& cblk_str: cblks_str)
+    {
+
+        block_complete_entry cblk;
+
+        if (!hex_to_complete_block(cblk_str, cblk))
+            return false;
+
+        cblks.push_back(cblk);
+    }
+
+    return true;
+}
+
+bool
+blocks_and_txs_from_complete_blocks(
+        vector<block_complete_entry> const& cblks,
+        vector<block>& blocks,
+        vector<transaction>& transactions)
+{
+
+
+    for (auto const& cblk: cblks)
+    {
+        block blk;
+
+        if (!parse_and_validate_block_from_blob(cblk.block, blk))
+            return false;
+
+        blocks.push_back(blk);
+
+        // first is miner_tx
+        transactions.push_back(blk.miner_tx);
+
+        vector<transaction> txs;
+
+        for (auto const& tx_blob: cblk.txs)
+        {
+            transaction tx;
+
+            if (!parse_and_validate_tx_from_blob(tx_blob, tx))
+                return false;
+
+            txs.push_back(tx);
+        }
+
+        // now normal txs
+        transactions.insert(transactions.end(),
+                            txs.begin(), txs.end());
+    }
+
+    return true;
+}
+
+bool
+addr_and_viewkey_from_string(string const& addres_str,
+                             string const& viewkey_str,
+                             network_type net_type,
+                             address_parse_info& address,
+                             crypto::secret_key& viewkey)
+{
+    if (!xmreg::parse_str_address(addres_str, address, net_type))
+        return false;
+
+    if (!xmreg::parse_str_secret_key(viewkey_str, viewkey))
+          return false;
+
+    return true;
+}
+
+bool
+output_data_from_hex(
+        string const& out_data_hex,
+        std::map<vector<uint64_t>,
+                 vector<cryptonote::output_data_t>>&
+                     outputs_data_map)
+{
+    // key: vector of absolute_offsets and associated amount (last value),
+    // value: vector of output_info_of_mixins as string
+    std::map<vector<uint64_t>, vector<string>> outputs_data_map_str;
+
+    try
+    {
+        string out_data_blob;
+
+        if (!epee::string_tools::parse_hexstr_to_binbuff(
+                    out_data_hex, out_data_blob))
+            return false;
+
+        std::stringstream iss;
+        iss << out_data_blob;
+        boost::archive::portable_binary_iarchive archive(iss);
+        archive >> outputs_data_map_str;
+
+        for (auto const& kv: outputs_data_map_str)
+        {
+            auto const& absolute_offsets = kv.first;
+
+            for (string const& s: kv.second)
+            {
+                cryptonote::output_data_t out_data;
+
+                if (!hex_to_pod(s, out_data))
+                {
+                    cerr << "hex_to_pod faild in output_data_from_hex\n";
+                    return false;
+                }
+
+                //cout << "\n absolute_offsets (last value is amount): ";
+                //for (auto& v: absolute_offsets)
+                //    cout << v << ", ";
+                //cout << '\n';
+
+                outputs_data_map[absolute_offsets].push_back(out_data);
+            }
+        }
+    }
+    catch (...)
+    {
+        cerr << "deserialization faild in output_data_from_hex\n";
+        return false;
+    }
+
+    return true;
+}
+
+
+bool
+populate_known_outputs_from_csv(
+        string const& csv_file,
+        std::unordered_map<public_key, uint64_t>& known_outputs,
+        bool skip_first_line)
+{
+
+    std::ifstream input(csv_file);
+
+    if (!input.is_open())
+    {
+        cerr << "Cant open: " << csv_file << '\n';
+        return false;
+    }
+
+    string line;
+
+    while(getline(input, line))
+    {
+       if (skip_first_line)
+       {
+           skip_first_line = false;
+           continue;
+       }
+       vector<string> vec;
+
+       boost::algorithm::split(vec, line, boost::is_any_of(","));
+
+       uint64_t amount;
+       string  out_public_key;
+
+       try
+       {
+          amount  = boost::lexical_cast<uint64_t>(vec.at(7));
+          out_public_key = vec.at(8);
+       }
+       catch (std::exception const& e)
+       {
+           cerr << e.what() << endl;
+           return false;
+       }
+
+       public_key out_pk;
+
+       if (!hex_to_pod(out_public_key, out_pk))
+       {
+           cerr << "hex_to_pod failed in output_data_from_hex\n";
+           return false;
+       }
+
+       auto it = known_outputs.find(out_pk);
+
+       if (it != known_outputs.end())
+       {
+           cerr << "csv has duplicate out_public_key\n";
+           return false;
+       }
+
+       known_outputs.insert({out_pk, amount});
+    }
+
+    return true;
+
+}
+
+
 
 }
 

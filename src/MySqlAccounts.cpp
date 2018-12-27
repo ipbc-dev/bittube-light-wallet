@@ -282,8 +282,7 @@ MySqlAccounts::insert(const T& data_to_insert)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
-        ;
+        MYSQL_EXCEPTION_MSG(e);;
     }
 
     return 0;
@@ -320,8 +319,7 @@ MySqlAccounts::insert(const vector<T>& data_to_insert)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
-        //throw  e;
+        MYSQL_EXCEPTION_MSG(e);
     }
 
     return 0;
@@ -352,8 +350,7 @@ MySqlAccounts::select(uint64_t account_id, vector<T>& selected_data)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
-        //throw  e;
+        MYSQL_EXCEPTION_MSG(e);
     }
 
     return false;
@@ -399,8 +396,7 @@ MySqlAccounts::update(T const& orginal_row, T const& new_row)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
-        //throw  e;
+        MYSQL_EXCEPTION_MSG(e);
     }
 
     return false;

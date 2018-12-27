@@ -13,6 +13,7 @@
 #include "gtest/gtest.h"
 #include "../src/ThreadRAII.h"
 
+#include "helpers.h"
 
 namespace
 {
@@ -28,23 +29,6 @@ using namespace std::chrono_literals;
 using ::testing::AllOf;
 using ::testing::Ge;
 using ::testing::Le;
-
-#define TX_FROM_HEX(hex_string)                                                 \
-    transaction tx;                                                             \
-    crypto::hash tx_hash;                                                       \
-    crypto::hash tx_prefix_hash;                                                \
-    ASSERT_TRUE(xmreg::hex_to_tx(hex_string, tx, tx_hash, tx_prefix_hash));     \
-    string tx_hash_str = pod_to_hex(tx_hash);                                   \
-    string tx_prefix_hash_str = pod_to_hex(tx_prefix_hash);
-
-#define ACC_FROM_HEX(hex_address)                                               \
-         xmreg::XmrAccount acc;                                                 \
-         ASSERT_TRUE(this->xmr_accounts->select(hex_address, acc));
-
-
-#define TX_AND_ACC_FROM_HEX(hex_tx, hex_address)                                \
-         TX_FROM_HEX(hex_tx);                                                   \
-         ACC_FROM_HEX(hex_address);
 
 
 json
@@ -134,7 +118,7 @@ TEST(MYSQL_CONNECTION, CanConnect)
     json db_config = readin_config();
 
     if (db_config.empty())
-        FAIL() << "Cant readin_config()";
+        FAIL() << "Cant read in_config()";
 
     xmreg::MySqlConnector::url = db_config["url"];
     xmreg::MySqlConnector::port = db_config["port"];
@@ -148,7 +132,7 @@ TEST(MYSQL_CONNECTION, CanConnect)
         auto xmr_accounts = std::make_shared<xmreg::MySqlAccounts>(nullptr);
 
         // try to connect again
-        // it should not perform the connection again, bust just return true;
+        // it should not perform the connection again, but just return true;
         EXPECT_TRUE(xmr_accounts->get_connection()->connect());
     }
     catch(std::exception const& e)
@@ -175,7 +159,7 @@ public:
         db_config = readin_config();
 
         if (db_config.empty())
-            FAIL() << "Cant readin_config()";
+            FAIL() << "Cant read in_config()";
 
         xmreg::MySqlConnector::url = db_config["url"];
         xmreg::MySqlConnector::port = db_config["port"];
@@ -299,7 +283,8 @@ TEST_F(MYSQL_TEST, UpdateAccount)
     auto updated_account = acc;
 
     updated_account.scanned_block_height = 555;
-    updated_account.scanned_block_timestamp = DateTime(static_cast<time_t>(5555555));
+    updated_account.scanned_block_timestamp
+            = DateTime(static_cast<time_t>(5555555));
 
     EXPECT_TRUE(xmr_accounts->update(acc, updated_account));
 
@@ -324,7 +309,8 @@ TEST_F(MYSQL_TEST, InsertAndGetAccount)
     uint64_t mock_current_blockchain_timestamp = 1529302789;
 
     DateTime blk_timestamp_mysql_format
-            = mysqlpp::DateTime(static_cast<time_t>(mock_current_blockchain_timestamp));
+            = mysqlpp::DateTime(static_cast<time_t>(
+                                    mock_current_blockchain_timestamp));
 
     // address to insert
     string xmr_addr {"4AKNvHrLG6KKtKYRaSPWtSZSnAcaBZ2UzeJg7guFNFK46EN93FnBDS5eiFgxH87Sb7ZcSFxMyBhhgKBJiG5kKBBmCY5tbgw"};
@@ -332,7 +318,8 @@ TEST_F(MYSQL_TEST, InsertAndGetAccount)
     string view_key_hash {"cdd3ae89cbdae1d14b178c7e7c6ba380630556cb9892bd24eb61a9a517e478cd"};
 
 
-    uint64_t expected_primary_id = xmr_accounts->get_next_primary_id(xmreg::XmrAccount());
+    uint64_t expected_primary_id
+            = xmr_accounts->get_next_primary_id(xmreg::XmrAccount());
 
     xmreg::XmrAccount new_account(mysqlpp::null,
                                   xmr_addr,
@@ -585,7 +572,8 @@ TEST_F(MYSQL_TEST, DeleteNoNExistingTx)
 {
     uint64_t some_non_existing_tx_id = 7774748483;
 
-    uint64_t no_of_deleted_rows = xmr_accounts->delete_tx(some_non_existing_tx_id);
+    uint64_t no_of_deleted_rows
+            = xmr_accounts->delete_tx(some_non_existing_tx_id);
 
     EXPECT_EQ(no_of_deleted_rows, 0);
 }
@@ -603,7 +591,8 @@ TEST_F(MYSQL_TEST, MarkTxSpendableAndNonSpendable)
     // this particular tx is marked as spendable in mysql
     EXPECT_TRUE(static_cast<bool>(tx_data.spendable));
 
-    uint64_t no_of_changed_rows = xmr_accounts->mark_tx_nonspendable(tx_data.id.data);
+    uint64_t no_of_changed_rows
+            = xmr_accounts->mark_tx_nonspendable(tx_data.id.data);
 
     EXPECT_EQ(no_of_changed_rows, 1);
 
@@ -758,7 +747,8 @@ TEST_F(MYSQL_TEST, InsertOneOutput)
 
     mock_output_data.account_id = acc.id.data;
 
-    uint64_t expected_primary_id = xmr_accounts->get_next_primary_id(mock_output_data);
+    uint64_t expected_primary_id
+            = xmr_accounts->get_next_primary_id(mock_output_data);
     uint64_t inserted_output_id = xmr_accounts->insert(mock_output_data);
 
     EXPECT_EQ(inserted_output_id, expected_primary_id);
@@ -767,7 +757,8 @@ TEST_F(MYSQL_TEST, InsertOneOutput)
 
     xmreg::XmrOutput out_data2;
 
-    EXPECT_TRUE(xmr_accounts->select_by_primary_id(inserted_output_id, out_data2));
+    EXPECT_TRUE(xmr_accounts
+                ->select_by_primary_id(inserted_output_id, out_data2));
 
     EXPECT_EQ(out_data2.tx_id, mock_output_data.tx_id);
     EXPECT_EQ(out_data2.out_pub_key, mock_output_data.out_pub_key);
@@ -842,7 +833,8 @@ TEST_F(MYSQL_TEST, InsertSeverlOutputsAtOnce)
         mock_outputs_data.back().account_id = acc.id.data;
     }
 
-    uint64_t expected_primary_id = xmr_accounts->get_next_primary_id(xmreg::XmrOutput());
+    uint64_t expected_primary_id
+            = xmr_accounts->get_next_primary_id(xmreg::XmrOutput());
 
     // first time insert should be fine
     uint64_t no_inserted_rows = xmr_accounts->insert(mock_outputs_data);
@@ -850,7 +842,8 @@ TEST_F(MYSQL_TEST, InsertSeverlOutputsAtOnce)
     EXPECT_EQ(no_inserted_rows, mock_outputs_data.size());
 
     // after inserting 10 rows, the expected ID should be before + 11
-    uint64_t expected_primary_id2 = xmr_accounts->get_next_primary_id(xmreg::XmrOutput());
+    uint64_t expected_primary_id2
+            = xmr_accounts->get_next_primary_id(xmreg::XmrOutput());
 
     EXPECT_EQ(expected_primary_id2, expected_primary_id + mock_outputs_data.size());
 
@@ -973,7 +966,8 @@ TEST_F(MYSQL_TEST, InsertOneInput)
 
     mock_input_data.account_id = acc.id.data;
 
-    uint64_t expected_primary_id = xmr_accounts->get_next_primary_id(mock_input_data);
+    uint64_t expected_primary_id
+            = xmr_accounts->get_next_primary_id(mock_input_data);
     uint64_t inserted_id  = xmr_accounts->insert(mock_input_data);
 
     EXPECT_EQ(expected_primary_id, inserted_id);
@@ -1007,7 +1001,8 @@ TEST_F(MYSQL_TEST, InsertSeverlInputsAtOnce)
         mock_data.back().account_id = acc.id.data;
     }
 
-    uint64_t expected_primary_id = xmr_accounts->get_next_primary_id(xmreg::XmrInput());
+    uint64_t expected_primary_id
+            = xmr_accounts->get_next_primary_id(xmreg::XmrInput());
 
     // first time insert should be fine
     uint64_t no_inserted_rows = xmr_accounts->insert(mock_data);
@@ -1015,7 +1010,8 @@ TEST_F(MYSQL_TEST, InsertSeverlInputsAtOnce)
     EXPECT_EQ(no_inserted_rows, mock_data.size());
 
     // after inserting 10 rows, the expected ID should be before + 11
-    uint64_t expected_primary_id2 = xmr_accounts->get_next_primary_id(xmreg::XmrInput());
+    uint64_t expected_primary_id2
+            = xmr_accounts->get_next_primary_id(xmreg::XmrInput());
 
     EXPECT_EQ(expected_primary_id2, expected_primary_id + mock_data.size());
 
@@ -1199,7 +1195,10 @@ class MockCurrentBlockchainStatus1 : public xmreg::CurrentBlockchainStatus
 {
 public:
     MockCurrentBlockchainStatus1()
-            : xmreg::CurrentBlockchainStatus(xmreg::BlockchainSetup()) {}
+            : xmreg::CurrentBlockchainStatus(
+                  xmreg::BlockchainSetup(),
+                  nullptr, nullptr)
+    {}
 
     bool tx_unlock_state {true};
     bool tx_exist_state {true};
@@ -1208,7 +1207,10 @@ public:
 
     // all txs in the blockchain are unlocked
     virtual bool
-    is_tx_unlocked(uint64_t unlock_time, uint64_t block_height) override
+    is_tx_unlocked(uint64_t unlock_time,
+                   uint64_t block_height,
+                   xmreg::TxUnlockChecker const& tx_unlock_checker
+                        = xmreg::TxUnlockChecker()) override
     {
         return tx_unlock_state;
     }
@@ -1255,7 +1257,8 @@ TEST_F(MYSQL_TEST, SelectTxsIfAllAreSpendableAndExist)
     txs.clear();
     ASSERT_TRUE(this->xmr_accounts->select(acc.id.data, txs));
 
-    EXPECT_TRUE(this->xmr_accounts->select_txs_for_account_spendability_check(acc.id.data, txs));
+    EXPECT_TRUE(this->xmr_accounts
+                ->select_txs_for_account_spendability_check(acc.id.data, txs));
 
     // we check if non of the input txs got filtere out
     EXPECT_EQ(txs.size(), no_of_original_txs);
@@ -1303,7 +1306,8 @@ TEST_F(MYSQL_TEST, SelectTxsIfAllAreNonspendableButUnlockedAndExist)
     for (auto const& tx: txs)
         ASSERT_FALSE(bool {tx.spendable});
 
-    EXPECT_TRUE(this->xmr_accounts->select_txs_for_account_spendability_check(acc.id.data, txs));
+    EXPECT_TRUE(this->xmr_accounts
+                ->select_txs_for_account_spendability_check(acc.id.data, txs));
 
     // we check if non of the input txs got filtere out
     EXPECT_EQ(txs.size(), no_of_original_txs);
@@ -1374,7 +1378,8 @@ TEST_F(MYSQL_TEST, SelectTxsIfAllAreNonspendableLockedButExist)
             ASSERT_EQ(tx.unlock_time, 0);
     }
 
-    EXPECT_TRUE(this->xmr_accounts->select_txs_for_account_spendability_check(acc.id.data, txs));
+    EXPECT_TRUE(this->xmr_accounts
+                ->select_txs_for_account_spendability_check(acc.id.data, txs));
 
     // we check if non of the input txs got filtere out
     EXPECT_EQ(txs.size(), no_of_original_txs);
@@ -1385,7 +1390,8 @@ TEST_F(MYSQL_TEST, SelectTxsIfAllAreNonspendableLockedButExist)
     {
         ASSERT_FALSE(bool {tx.spendable});
         if (!bool {tx.coinbase})
-            ASSERT_EQ(tx.unlock_time, tx.height + CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE);
+            ASSERT_EQ(tx.unlock_time,
+                      tx.height + CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE);
     }
 }
 
@@ -1413,8 +1419,6 @@ TEST_F(MYSQL_TEST, SelectTxsIfAllAreNonspendableUnlockedAndDontExist)
     // we mark all txs for this account as nonspendable
     // so that we have something to work with in this test
     ASSERT_TRUE(this->xmr_accounts->select(acc.id.data, txs));
-
-    auto no_of_original_txs = txs.size();
 
     for (size_t i = 0; i < txs.size(); ++i)
         this->xmr_accounts->mark_tx_nonspendable(txs[i].id.data);
@@ -1498,7 +1502,7 @@ TEST_F(MYSQL_TEST, MysqlPingThreadStopsOnPingFailure)
     auto conn = xmr_accounts->get_connection();
 
     // create ping functor that will be pinging mysql every 1 second
-    xmreg::MysqlPing mysql_ping {conn, 1};
+    xmreg::MysqlPing mysql_ping {conn, 1s};
 
     {
         // create ping thread and start pinging
@@ -1518,7 +1522,8 @@ TEST_F(MYSQL_TEST, MysqlPingThreadStopsOnPingFailure)
     }
 
     // since we waiting 4s, we expect that there were at about 3-4 pings
-    EXPECT_EQ(mysql_ping.get_stop_reason(), xmreg::MysqlPing::StopReason::PingFailed);
+    EXPECT_EQ(mysql_ping.get_stop_reason(),
+              xmreg::MysqlPing::StopReason::PingFailed);
     EXPECT_THAT(mysql_ping.get_counter(), AllOf(Ge(3), Le(5)));
 }
 
@@ -1538,7 +1543,7 @@ TEST_F(MYSQL_TEST, MysqlPingThreadStopsOnPointerExpiry)
     ASSERT_TRUE(new_conn->get_connection().connected());
 
     // create ping functor that will be pinging mysql every 1 second
-    xmreg::MysqlPing mysql_ping {new_conn, 1};
+    xmreg::MysqlPing mysql_ping {new_conn, 1s};
 
     {
         // create ping thread and start pinging
@@ -1559,7 +1564,8 @@ TEST_F(MYSQL_TEST, MysqlPingThreadStopsOnPointerExpiry)
     }
 
     // since we waiting 4s, we expect that there were at about 3-4 pings
-    EXPECT_EQ(mysql_ping.get_stop_reason(), xmreg::MysqlPing::StopReason::PointerExpired);
+    EXPECT_EQ(mysql_ping.get_stop_reason(),
+              xmreg::MysqlPing::StopReason::PointerExpired);
     EXPECT_THAT(mysql_ping.get_counter(), AllOf(Ge(3), Le(5)));
 }
 

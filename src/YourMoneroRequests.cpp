@@ -99,16 +99,18 @@ YourMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
         }
 
         DateTime blk_timestamp_mysql_format
-                = XmrTransaction::timestamp_to_DateTime(current_blockchain_timestamp);
+                = XmrTransaction::timestamp_to_DateTime(
+                    current_blockchain_timestamp);
 
 
         // create new account
-        XmrAccount new_account(mysqlpp::null,
-                               xmr_address,
-                               make_hash(view_key),
-                               current_blockchain_height, /* for scanned_block_height */
-                               blk_timestamp_mysql_format,
-                               current_blockchain_height);
+        XmrAccount new_account(
+                       mysqlpp::null,
+                       xmr_address,
+                       make_hash(view_key),
+                       current_blockchain_height, /* for scanned_block_height */
+                       blk_timestamp_mysql_format,
+                       current_blockchain_height);
 
         // insert the new account into the mysql
         if ((acc_id = xmr_accounts->insert(new_account)) == 0)
@@ -148,14 +150,15 @@ YourMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
         session_close(session, j_response.dump());
         return;
 
-    } // else  if (login_and_start_search_thread(xmr_address, view_key, acc, j_response))
+    } // else  if (login_and_start_search_thread(xmr_address,
 
 
     session_close(session, j_response.dump());
 }
 
 void
-YourMoneroRequests::get_address_txs(const shared_ptr< Session > session, const Bytes & body)
+YourMoneroRequests::get_address_txs(
+        const shared_ptr< Session > session, const Bytes & body)
 {
     json j_response;
     json j_request;
@@ -191,10 +194,10 @@ YourMoneroRequests::get_address_txs(const shared_ptr< Session > session, const B
     j_response = json {
             {"total_received"         , 0},    // calculated in this function
             {"total_received_unlocked", 0},    // calculated in this function
-            {"scanned_height"         , 0},    // not used. it is here to match mybittube
+            {"scanned_height"         , 0},    // not used. just to match mymonero
             {"scanned_block_height"   , 0},    // taken from Accounts table
             {"scanned_block_timestamp", 0},    // taken from Accounts table
-            {"start_height"           , 0},    // blockchain hieght when acc was created
+            {"start_height"           , 0},    // blockchain height whencreated
             {"blockchain_height"      , 0},    // current blockchain height
             {"transactions"           , json::array()}
     };
@@ -202,9 +205,20 @@ YourMoneroRequests::get_address_txs(const shared_ptr< Session > session, const B
     // a placeholder for exciting or new account data
     xmreg::XmrAccount acc;
 
-    // if not logged, i.e., no search thread exist, then start one.
-    if (login_and_start_search_thread(xmr_address, view_key, acc, j_response))
-    {
+    // for this to continue, search thread must have already been
+    // created and still exisits.
+//    if (current_bc_status->search_thread_exist(xmr_address))
+//    {
+      if (login_and_start_search_thread(xmr_address, view_key, acc, j_response))
+      {
+        // populate acc and check view_key
+//        if (!login_and_start_search_thread(xmr_address, view_key, acc, j_response))
+//        {
+//            // some error with loggin in or search thread start
+//            session_close(session, j_response.dump());
+//            return;
+//        }
+
         // before fetching txs, check if provided view key
         // is correct. this is simply to ensure that
         // we cant fetch an account's txs using only address.
@@ -218,14 +232,16 @@ YourMoneroRequests::get_address_txs(const shared_ptr< Session > session, const B
         j_response["total_received"]          = total_received;
         j_response["start_height"]            = acc.start_height;
         j_response["scanned_block_height"]    = acc.scanned_block_height;
-        j_response["scanned_block_timestamp"] = static_cast<uint64_t>(acc.scanned_block_timestamp);
-        j_response["blockchain_height"]       = get_current_blockchain_height();
+        j_response["scanned_block_timestamp"] = static_cast<uint64_t>(
+                    acc.scanned_block_timestamp);
+        j_response["blockchain_height"]  = get_current_blockchain_height();
 
         vector<XmrTransaction> txs;
 
         xmr_accounts->select(acc.id.data, txs);
 
-        if (xmr_accounts->select_txs_for_account_spendability_check(acc.id.data, txs))
+        if (xmr_accounts->select_txs_for_account_spendability_check(
+                    acc.id.data, txs))
         {
             json j_txs = json::array();
 
@@ -240,9 +256,9 @@ YourMoneroRequests::get_address_txs(const shared_ptr< Session > session, const B
                         {"mixin"          , tx.mixin},
                         {"payment_id"     , tx.payment_id},
                         {"unlock_time"    , tx.unlock_time},                  
-                        {"total_sent"     , 0},    // to be field when checking for spent_outputs below
-                        {"total_received" , tx.total_received},
-                        {"timestamp"      , static_cast<uint64_t>(tx.timestamp)},
+                        {"total_sent"     , 0}, // to be field when checking for spent_outputs below
+                        {"total_received" , std::to_string(tx.total_received)},
+                        {"timestamp"      , static_cast<uint64_t>(tx.timestamp)*1000},
                         {"mempool"        , false} // tx in database are never from mempool
                 };
 
@@ -258,12 +274,13 @@ YourMoneroRequests::get_address_txs(const shared_ptr< Session > session, const B
                     {
                         XmrOutput out;
 
-                        if (xmr_accounts->select_by_primary_id(input.output_id, out))
+                        if (xmr_accounts->select_by_primary_id(
+                                    input.output_id, out))
                         {
                             total_spent += input.amount;
 
                             j_spent_outputs.push_back({
-                              {"amount"     , input.amount},
+                              {"amount"     , std::to_string(input.amount)},
                               {"key_image"  , input.key_image},
                               {"tx_pub_key" , out.tx_pub_key},
                               {"out_index"  , out.out_index},
@@ -271,7 +288,7 @@ YourMoneroRequests::get_address_txs(const shared_ptr< Session > session, const B
                         }
                     }
 
-                    j_tx["total_sent"] = total_spent;
+                    j_tx["total_sent"] = std::to_string(total_spent);
 
                     j_tx["spent_outputs"] = j_spent_outputs;
 
@@ -288,16 +305,19 @@ YourMoneroRequests::get_address_txs(const shared_ptr< Session > session, const B
 
             } // for (XmrTransaction tx: txs)
 
-            j_response["total_received"]          = total_received;
-            j_response["total_received_unlocked"] = total_received_unlocked;
+            j_response["total_received"]          = std::to_string(total_received);
+            j_response["total_received_unlocked"] = std::to_string(total_received_unlocked);
 
             j_response["transactions"] = j_txs;
 
-        } // if (xmr_accounts->select_txs_for_account_spendability_check(acc.id, txs))
+        } // if (xmr_accounts->select_txs_for_ac
 
-    } // if (login_and_start_search_thread(xmr_address, view_key, acc, j_response))
+    } // if (current_bc_status->search_thread_exist(xmr_address))
     else
-    {
+    {        
+        j_response = json {{"status", "error"},
+                           {"reason", "Search thread does not exist."}};
+
         // some error with loggin in or search thread start
         session_close(session, j_response.dump());
         return;
@@ -326,6 +346,7 @@ YourMoneroRequests::get_address_txs(const shared_ptr< Session > session, const B
                 last_tx_id_db = j_response["transactions"].back()["id"];
             }
 
+
             for (json& j_tx: j_mempool_tx)
             {
                 //cout << "mempool j_tx[\"total_received\"]: "
@@ -333,27 +354,43 @@ YourMoneroRequests::get_address_txs(const shared_ptr< Session > session, const B
 
                 j_tx["id"] = ++last_tx_id_db;
 
-                total_received_mempool += j_tx["total_received"].get<uint64_t>();
-                total_sent_mempool     += j_tx["total_sent"].get<uint64_t>();
+                total_received_mempool += boost::lexical_cast<uint64_t>(
+                            j_tx["total_received"].get<string>());
+                total_sent_mempool     += boost::lexical_cast<uint64_t>(
+                            j_tx["total_sent"].get<string>());
 
                 j_response["transactions"].push_back(j_tx);
             }
 
-            j_response["total_received"] = j_response["total_received"].get<uint64_t>()
-                                           + total_received_mempool;
+            // we account for mempool txs when providing final
+            // unlocked and locked balances.
+
+            j_response["total_received"]
+                    = std::to_string(
+                        boost::lexical_cast<uint64_t>(
+                            j_response["total_received"].get<string>())
+                                           + total_received_mempool - total_sent_mempool);
+
+            j_response["total_received_unlocked"]
+                    = std::to_string(
+                        boost::lexical_cast<uint64_t>(
+                            j_response["total_received_unlocked"].get<string>())
+                                          + total_received_mempool - total_sent_mempool);
         }
 
     }
 
     string response_body = j_response.dump();
 
-    auto response_headers = make_headers({{ "Content-Length", to_string(response_body.size())}});
+    auto response_headers = make_headers({{ "Content-Length",
+                                            to_string(response_body.size())}});
 
     session->close(OK, response_body, response_headers);
 }
 
 void
-YourMoneroRequests::get_address_info(const shared_ptr< Session > session, const Bytes & body)
+YourMoneroRequests::get_address_info(
+        const shared_ptr< Session > session, const Bytes & body)
 {
     json j_response;
     json j_request;
@@ -386,10 +423,10 @@ YourMoneroRequests::get_address_info(const shared_ptr< Session > session, const 
     string viewkey_hash = make_hash(view_key);
 
     j_response = json {
-            {"locked_funds"           , 0},    // locked xmr (e.g., younger than 10 blocks)
-            {"total_received"         , 0},    // calculated in this function
-            {"total_sent"             , 0},    // calculated in this function
-            {"scanned_height"         , 0},    // not used. it is here to match mybittube
+            {"locked_funds"           , "0"},    // locked xmr (e.g., younger than 10 blocks)
+            {"total_received"         , "0"},    // calculated in this function
+            {"total_sent"             , "0"},    // calculated in this function
+            {"scanned_height"         , 0},    // not used. it is here to match mymonero
             {"scanned_block_height"   , 0},    // taken from Accounts table
             {"scanned_block_timestamp", 0},    // taken from Accounts table
             {"start_height"           , 0},    // not used, but available in Accounts table.
@@ -404,10 +441,10 @@ YourMoneroRequests::get_address_info(const shared_ptr< Session > session, const 
     // a placeholder for exciting or new account data
     xmreg::XmrAccount acc;
 
-    // select this account if its existing one
+    // for this to continue, search thread must have already been
+    // created and still exisits.
     if (login_and_start_search_thread(xmr_address, view_key, acc, j_response))
     {
-
         uint64_t total_received {0};
 
         // ping the search thread that we still need it.
@@ -416,7 +453,8 @@ YourMoneroRequests::get_address_info(const shared_ptr< Session > session, const 
 
         uint64_t current_searched_blk_no {0};
 
-        if (current_bc_status->get_searched_blk_no(xmr_address, current_searched_blk_no))
+        if (current_bc_status->get_searched_blk_no(
+                    xmr_address, current_searched_blk_no))
         {
             // if current_searched_blk_no is higher than what is in mysql, update it
             // in the search thread. This may occure when manually editing scanned_block_height
@@ -425,15 +463,17 @@ YourMoneroRequests::get_address_info(const shared_ptr< Session > session, const 
 
             if (current_searched_blk_no > acc.scanned_block_height + 10)
             {
-                current_bc_status->set_new_searched_blk_no(xmr_address, acc.scanned_block_height);
+                current_bc_status->set_new_searched_blk_no(
+                            xmr_address, acc.scanned_block_height);
             }
         }
 
-        j_response["total_received"]          = total_received;
+        j_response["total_received"]          = std::to_string(total_received);
         j_response["start_height"]            = acc.start_height;
         j_response["scanned_block_height"]    = acc.scanned_block_height;
-        j_response["scanned_block_timestamp"] = static_cast<uint64_t>(acc.scanned_block_timestamp);
-        j_response["blockchain_height"]       = get_current_blockchain_height();
+        j_response["scanned_block_timestamp"]
+                = static_cast<uint64_t>(acc.scanned_block_timestamp);
+        j_response["blockchain_height"]  = get_current_blockchain_height();
 
         uint64_t total_sent {0};
 
@@ -445,7 +485,8 @@ YourMoneroRequests::get_address_info(const shared_ptr< Session > session, const 
         // now, filter out or updated transactions from txs vector that no
         // longer exisit in the recent blocks. Update is done to check for their
         // spendability status.
-        if (xmr_accounts->select_txs_for_account_spendability_check(acc.id.data, txs))
+        if (xmr_accounts->select_txs_for_account_spendability_check(
+                    acc.id.data, txs))
         {
             json j_spent_outputs = json::array();
 
@@ -460,12 +501,13 @@ YourMoneroRequests::get_address_info(const shared_ptr< Session > session, const 
                         // check if the output, has been spend
                         vector<XmrInput> ins;
 
-                        if (xmr_accounts->select_inputs_for_out(out.id.data, ins))
+                        if (xmr_accounts->select_inputs_for_out(
+                                    out.id.data, ins))
                         {
                             for (XmrInput& in: ins)
                             {
                                 j_spent_outputs.push_back({
-                                    {"amount"     , in.amount},
+                                    {"amount"     , std::to_string(in.amount)},
                                     {"key_image"  , in.key_image},
                                     {"tx_pub_key" , out.tx_pub_key},
                                     {"out_index"  , out.out_index},
@@ -485,16 +527,19 @@ YourMoneroRequests::get_address_info(const shared_ptr< Session > session, const 
             } // for (XmrTransaction tx: txs)
 
 
-            j_response["total_received"] = total_received;
-            j_response["total_sent"]     = total_sent;
+            j_response["total_received"] = std::to_string(total_received);
+            j_response["total_sent"]     = std::to_string(total_sent);
 
             j_response["spent_outputs"]  = j_spent_outputs;
 
         } // if (xmr_accounts->select_txs_for_account_spendability_check(acc.id, txs))
 
-    } //  if (login_and_start_search_thread(xmr_address, view_key, acc, j_response))
+    } // if (current_bc_status->search_thread_exist(xmr_address))
     else
     {
+        j_response = json {{"status", "error"},
+                           {"reason", "Search thread does not exist."}};
+
         // some error with loggin in or search thread start
         session_close(session, j_response.dump());
         return;
@@ -502,14 +547,17 @@ YourMoneroRequests::get_address_info(const shared_ptr< Session > session, const 
 
     string response_body = j_response.dump();
 
-    auto response_headers = make_headers({{ "Content-Length", to_string(response_body.size())}});
+    auto response_headers = make_headers({{ "Content-Length",
+                                            to_string(response_body.size())}});
 
     session->close( OK, response_body, response_headers);
 }
 
 
 void
-YourMoneroRequests::get_unspent_outs(const shared_ptr< Session > session, const Bytes & body)
+YourMoneroRequests::get_unspent_outs(
+        const shared_ptr< Session > session,
+        const Bytes & body)
 {
     json j_response;
     json j_request;
@@ -538,8 +586,10 @@ YourMoneroRequests::get_unspent_outs(const shared_ptr< Session > session, const 
         mixin       = j_request["mixin"];
         use_dust    = j_request["use_dust"];
 
-        dust_threshold = boost::lexical_cast<uint64_t>(j_request["dust_threshold"].get<string>());
-        amount         = boost::lexical_cast<uint64_t>(j_request["amount"].get<string>());
+        dust_threshold = boost::lexical_cast<uint64_t>(
+                    j_request["dust_threshold"].get<string>());
+        amount  = boost::lexical_cast<uint64_t>(
+                    j_request["amount"].get<string>());
     }
     catch (json::exception const& e)
     {
@@ -559,7 +609,7 @@ YourMoneroRequests::get_unspent_outs(const shared_ptr< Session > session, const 
     string viewkey_hash = make_hash(view_key);
 
     j_response = json  {
-            {"amount" , 0},            // total value of the outputs
+            {"amount" , "0"},          // total value of the outputs
             {"outputs", json::array()} // list of outputs
                                        // exclude those without require
                                        // no of confirmation
@@ -569,12 +619,23 @@ YourMoneroRequests::get_unspent_outs(const shared_ptr< Session > session, const 
     xmreg::XmrAccount acc;
 
     // select this account if its existing one
-    if (login_and_start_search_thread(xmr_address, view_key, acc, j_response))
+
+    // for this to continue, search thread must have already been
+    // created and still exisits.
+    if (current_bc_status->search_thread_exist(xmr_address))
     {
+        // populate acc and check view_key
+        if (!login_and_start_search_thread(xmr_address, view_key, acc, j_response))
+        {
+            // some error with loggin in or search thread start
+            session_close(session, j_response.dump());
+            return;
+        }
+
         uint64_t total_outputs_amount {0};
 
-        uint64_t current_blockchain_height
-                = current_bc_status->get_current_blockchain_height();
+//        uint64_t current_blockchain_height
+//                = current_bc_status->get_current_blockchain_height();
 
         vector<XmrTransaction> txs;
 
@@ -592,7 +653,8 @@ YourMoneroRequests::get_unspent_outs(const shared_ptr< Session > session, const 
                 // thus no reason to return them to the frontend
                 // for constructing a tx.
 
-                if (!current_bc_status->is_tx_unlocked(tx.unlock_time, tx.height))
+                if (!current_bc_status->is_tx_unlocked(
+                            tx.unlock_time, tx.height))
                 {
                     continue;
                 }
@@ -623,7 +685,7 @@ YourMoneroRequests::get_unspent_outs(const shared_ptr< Session > session, const 
 
                         string rct = out.get_rct();
 
-                        // coinbaser rct txs require speciall treatment
+                        // coinbase rct txs require speciall treatment
                         if (tx.coinbase && tx.is_rct)
                         {
                             uint64_t amount  = (tx.is_rct ? 0 : out.amount);
@@ -640,7 +702,7 @@ YourMoneroRequests::get_unspent_outs(const shared_ptr< Session > session, const 
                         }
 
                         json j_out{
-                                {"amount"          , out.amount},
+                                {"amount"          , std::to_string(out.amount)},
                                 {"public_key"      , out.out_pub_key},
                                 {"index"           , out.out_index},
                                 {"global_index"    , out.global_index},
@@ -649,14 +711,16 @@ YourMoneroRequests::get_unspent_outs(const shared_ptr< Session > session, const 
                                 {"tx_hash"         , tx.hash},
                                 {"tx_prefix_hash"  , tx.prefix_hash},
                                 {"tx_pub_key"      , tx.tx_pub_key},
-                                {"timestamp"       , static_cast<uint64_t>(out.timestamp)},
+                                {"timestamp"       , static_cast<uint64_t>(
+                                            out.timestamp*1e3)},
                                 {"height"          , tx.height},
                                 {"spend_key_images", json::array()}
                         };
 
                         vector<XmrInput> ins;
 
-                        if (xmr_accounts->select_inputs_for_out(out.id.data, ins))
+                        if (xmr_accounts->select_inputs_for_out(
+                                    out.id.data, ins))
                         {
                             json& j_ins = j_out["spend_key_images"];
 
@@ -678,24 +742,23 @@ YourMoneroRequests::get_unspent_outs(const shared_ptr< Session > session, const 
 
         } //  if (xmr_accounts->select_txs(acc.id, txs))
 
-        j_response["amount"] = total_outputs_amount;
+        j_response["amount"] = std::to_string(total_outputs_amount);
 
 
         // need proper per_kb_fee estimate as
         // it is already using dynanamic fees. frontend
         // uses old fixed fees.
 
-        uint64_t fee_estimated {DYNAMIC_FEE_PER_KB_BASE_FEE};
-
-        if (current_bc_status->get_dynamic_per_kb_fee_estimate(fee_estimated))
-        {
-            j_response["per_kb_fee"] = fee_estimated;
-        }
+        j_response["per_byte_fee"] = current_bc_status
+                                            ->get_dynamic_base_fee_estimate();
 
 
-    } // if (login_and_start_search_thread(xmr_address, view_key, acc, j_response))
+    } // if (current_bc_status->search_thread_exist(xmr_address))
     else
     {
+        j_response = json {{"status", "error"},
+                           {"reason", "Search thread does not exist."}};
+
         // some error with loggin in or search thread start
         session_close(session, j_response.dump());
         return;
@@ -704,13 +767,15 @@ YourMoneroRequests::get_unspent_outs(const shared_ptr< Session > session, const 
 
     string response_body = j_response.dump();
 
-    auto response_headers = make_headers({{ "Content-Length", to_string(response_body.size())}});
+    auto response_headers = make_headers({{ "Content-Length",
+                                            to_string(response_body.size())}});
 
     session->close( OK, response_body, response_headers);
 }
 
 void
-YourMoneroRequests::get_random_outs(const shared_ptr< Session > session, const Bytes & body)
+YourMoneroRequests::get_random_outs(
+        const shared_ptr< Session > session, const Bytes & body)
 {
     json j_request;
     json j_response;
@@ -740,7 +805,8 @@ YourMoneroRequests::get_random_outs(const shared_ptr< Session > session, const B
     {
         cerr << "Request ring size too big" << '\n';
         j_response["status"] = "error";
-        j_response["error"]  = fmt::format("Request ring size {:d} too large", count);
+        j_response["error"]  = fmt::format("Request ring size {:d} too large",
+                                           count);
         session_close(session, j_response.dump());
     }
 
@@ -752,7 +818,10 @@ YourMoneroRequests::get_random_outs(const shared_ptr< Session > session, const B
         // daeamon to get random outputs for these amounts
         for (json amount: j_request["amounts"])
         {
-            amounts.push_back(boost::lexical_cast<uint64_t>(amount.get<string>()));
+            amounts.push_back(boost::lexical_cast<uint64_t>(
+                                  amount.get<string>()));
+
+            //            amounts.push_back(0);
         }
     }
     catch (boost::bad_lexical_cast& e)
@@ -762,27 +831,26 @@ YourMoneroRequests::get_random_outs(const shared_ptr< Session > session, const B
         return;
     }
 
-    vector<COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount> found_outputs;
+    vector<RandomOutputs::outs_for_amount> found_outputs;
 
     if (current_bc_status->get_random_outputs(amounts, count, found_outputs))
     {
         json& j_amount_outs = j_response["amount_outs"];
 
-        for (const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount& outs: found_outputs)
+        for (const auto& outs: found_outputs)
         {
-            json j_outs {{"amount", outs.amount},
+            json j_outs {{"amount", std::to_string(outs.amount)},
                          {"outputs", json::array()}};
 
 
             json& j_outputs = j_outs["outputs"];
 
-            for (const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::out_entry& out: outs.outs)
+            for (auto  const& out: outs.outs)
             {
-                uint64_t global_amount_index = out.global_amount_index;
-
                 tuple<string, string, string>
-                        rct_field = current_bc_status->construct_output_rct_field(
-                                    global_amount_index, outs.amount);
+                        rct_field = current_bc_status
+                            ->construct_output_rct_field(
+                                    out.global_amount_index, outs.amount);
 
                 string rct = std::get<0>(rct_field)    // rct_pk
                              + std::get<1>(rct_field)  // rct_mask
@@ -796,29 +864,32 @@ YourMoneroRequests::get_random_outs(const shared_ptr< Session > session, const B
 
                 j_outputs.push_back(out_details);
 
-            } // for (const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::out_entry& out: outs.outs)
+            } // for (const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AM
 
             j_amount_outs.push_back(j_outs);
 
-        } // for (const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount& outs: found_outputs)
+        } // for (const COMMAND_RPC_GET_RANDOM_OUTPUTS_
 
-    } // if (current_bc_status->get_random_outputs(amounts, count, found_outputs))
+    } // if (current_bc_status->get_random_outputs(amounts,
     else
     {
         j_response["status"] = "error";
-        j_response["error"]  = fmt::format("Error getting random outputs from bittube deamon");
+        j_response["error"]  = fmt::format("Error getting random "
+                                           "outputs from monero deamon");
     }
 
     string response_body = j_response.dump();
 
-    auto response_headers = make_headers({{ "Content-Length", to_string(response_body.size())}});
+    auto response_headers = make_headers({{ "Content-Length",
+                                            to_string(response_body.size())}});
 
     session->close( OK, response_body, response_headers);
 }
 
 
 void
-YourMoneroRequests::submit_raw_tx(const shared_ptr< Session > session, const Bytes & body)
+YourMoneroRequests::submit_raw_tx(
+        const shared_ptr< Session > session, const Bytes & body)
 {
     json j_request = body_to_json(body);
 
@@ -829,13 +900,18 @@ YourMoneroRequests::submit_raw_tx(const shared_ptr< Session > session, const Byt
     string error_msg;
 
     // before we submit the tx into the deamon, we are going to do a few checks.
-    // first, we parse the hexbuffer submmited by the frontend into binary buffer block
-    // second, we are going to check if we can construct valid transaction object
+    // first, we parse the hexbuffer submmited by the frontend into
+    // binary buffer block
+    // second, we are going to check if we can construct
+    // valid transaction object
     // fromt that binary buffer.
-    // third, we are going to check if any key image in this tx is in any of the txs
+    // third, we are going to check if any key image in this tx is
+    // in any of the txs
     // in the mempool. This allows us to make a clear comment that the tx
-    // uses outputs just spend. This happens we a users submits few txs, one after another
-    // before previous txs get included in a block and are still present in the mempool.
+    // uses outputs just spend. This happens we a users submits few txs,
+    // one after another
+    // before previous txs get included in a block and are still
+    // present in the mempool.
 
     std::string tx_blob;
 
@@ -843,6 +919,9 @@ YourMoneroRequests::submit_raw_tx(const shared_ptr< Session > session, const Byt
     {
         j_response["status"] = "error";
         j_response["error"]  = "Tx faild parse_hexstr_to_binbuff";
+
+        OMERROR << j_response["error"];
+
         session_close(session, j_response.dump());
         return;
     }
@@ -853,6 +932,9 @@ YourMoneroRequests::submit_raw_tx(const shared_ptr< Session > session, const Byt
     {
         j_response["status"] = "error";
         j_response["error"]  = "Tx faild parse_and_validate_tx_from_blob";
+
+        OMERROR << j_response["error"];
+
         session_close(session, j_response.dump());
         return;
     }
@@ -860,8 +942,13 @@ YourMoneroRequests::submit_raw_tx(const shared_ptr< Session > session, const Byt
     if (current_bc_status->find_key_images_in_mempool(tx_to_be_submitted))
     {
         j_response["status"] = "error";
-        j_response["error"]  = "Tx uses your outputs that area already in the mempool. "
-                               "Please wait till your previous tx(s) get mined";
+        j_response["error"]  = "Tx uses your outputs that area already "
+                               "in the mempool. "
+                               "Please wait till your previous tx(s) "
+                               "get mined";
+
+        OMERROR << j_response["error"];
+
         session_close(session, j_response.dump());
         return;
     }
@@ -872,6 +959,9 @@ YourMoneroRequests::submit_raw_tx(const shared_ptr< Session > session, const Byt
     {
         j_response["status"] = "error";
         j_response["error"]  = error_msg;
+
+        OMERROR << j_response["error"];
+
         session_close(session, j_response.dump());
         return;
     }
@@ -881,13 +971,15 @@ YourMoneroRequests::submit_raw_tx(const shared_ptr< Session > session, const Byt
 
     string response_body = j_response.dump();
 
-    auto response_headers = make_headers({{ "Content-Length", to_string(response_body.size())}});
+    auto response_headers = make_headers({{ "Content-Length",
+                                            to_string(response_body.size())}});
 
     session->close( OK, response_body, response_headers);
 }
 
 void
-YourMoneroRequests::import_wallet_request(const shared_ptr< Session > session, const Bytes & body)
+YourMoneroRequests::import_wallet_request(
+        const shared_ptr< Session > session, const Bytes & body)
 {
     json j_request = body_to_json(body);
 
@@ -896,12 +988,15 @@ YourMoneroRequests::import_wallet_request(const shared_ptr< Session > session, c
     json j_response;
 
     j_response["request_fulfilled"] = false;
-    j_response["import_fee"]        = current_bc_status->get_bc_setup().import_fee;
+    j_response["import_fee"]        = std::to_string(
+                                            current_bc_status->get_bc_setup()
+                                                .import_fee);
     j_response["status"] = "error";
     j_response["error"]  = "Some error occured";
 
     // if current_bc_status-> is zero, we just import the wallet.
-    // we dont care about any databases or anything, as importin all wallet is free.
+    // we dont care about any databases or anything, as importin all
+    // wallet is free.
     // just reset the scanned block height in mysql and finish.
     if (current_bc_status->get_bc_setup().import_fee == 0)
     {
@@ -919,7 +1014,9 @@ YourMoneroRequests::import_wallet_request(const shared_ptr< Session > session, c
 
         string response_body = j_response.dump();
 
-        auto response_headers = make_headers({{ "Content-Length", to_string(response_body.size())}});
+        auto response_headers
+                = make_headers({{ "Content-Length",
+                                         std::to_string(response_body.size())}});
 
         session->close( OK, response_body, response_headers);
 
@@ -934,7 +1031,9 @@ YourMoneroRequests::import_wallet_request(const shared_ptr< Session > session, c
         j_response["error"] = "The account does not exists!";
 
         string response_body = j_response.dump();
-        auto response_headers = make_headers({{ "Content-Length", to_string(response_body.size())}});
+        auto response_headers
+                = make_headers({{ "Content-Length",
+                                     std::to_string(response_body.size())}});
 
         session->close( OK, response_body, response_headers);
         return;
@@ -958,7 +1057,9 @@ YourMoneroRequests::import_wallet_request(const shared_ptr< Session > session, c
             j_response["error"] = "TMore than one payment record found!";
 
             string response_body = j_response.dump();
-            auto response_headers = make_headers({{ "Content-Length", to_string(response_body.size())}});
+            auto response_headers
+                    = make_headers({{ "Content-Length",
+                                      to_string(response_body.size())}});
 
             session->close( OK, response_body, response_headers);
             return;
@@ -973,7 +1074,7 @@ YourMoneroRequests::import_wallet_request(const shared_ptr< Session > session, c
                         xmr_payment.payment_id);
 
         j_response["payment_id"]        = xmr_payment.payment_id;
-        j_response["import_fee"]        = xmr_payment.import_fee;
+        j_response["import_fee"]        = std::to_string(xmr_payment.import_fee);
         j_response["new_request"]       = false;
         j_response["request_fulfilled"] = request_fulfilled;
         j_response["payment_address"]   = integrated_address;
@@ -1018,27 +1119,34 @@ YourMoneroRequests::import_wallet_request(const shared_ptr< Session > session, c
                             request_fulfilled = true;
 
                             // change search blk number in the search thread
-                            if (!current_bc_status->set_new_searched_blk_no(xmr_address, 0))
+                            if (!current_bc_status
+                                    ->set_new_searched_blk_no(xmr_address, 0))
                             {
-                                cerr << "Updating searched_blk_no failed!" << endl;
-                                j_response["error"] = "Updating searched_blk_no failed!";
+                                cerr << "Updating searched_blk_no failed!\n";
+                                j_response["error"] = "Updating searched_blk_no"
+                                                      " failed!";
                             }
 
-                            j_response["request_fulfilled"] = request_fulfilled;
-                            j_response["status"]            = "Payment received. Thank you.";
+                            j_response["request_fulfilled"]
+                                    = request_fulfilled;
+                            j_response["status"]
+                                    = "Payment received. Thank you.";
                             j_response["new_request"]       = true;
                             j_response["error"]             = "";
                         }
                     }
                     else
                     {
-                        cerr << "Updating accounts due to made payment mysql failed! " << endl;
-                        j_response["error"] = "Updating accounts due to made payment mysql failed!";
+                        cerr << "Updating accounts due to made "
+                                "payment mysql failed! \n";
+                        j_response["error"]
+                                = "Updating accounts due to made "
+                                  "payment mysql failed!";
                     }
                 }
                 else
                 {
-                    cerr << "Updating payment mysql failed! " << endl;
+                    cerr << "Updating payment mysql failed!\n";
                     j_response["error"] = "Updating payment mysql failed!";
                 }
 
@@ -1052,7 +1160,8 @@ YourMoneroRequests::import_wallet_request(const shared_ptr< Session > session, c
             // front end should give proper message in this case
 
             j_response["request_fulfilled"] = request_fulfilled;
-            j_response["status"]            = "Wallet already imported or in the progress.";
+            j_response["status"]            = "Wallet already imported or "
+                                              "in the progress.";
             j_response["new_request"]       = false;
             j_response["error"]             = "";
         }
@@ -1076,7 +1185,8 @@ YourMoneroRequests::import_wallet_request(const shared_ptr< Session > session, c
         xmr_payment.id                = mysqlpp::null;
         xmr_payment.account_id        = acc.id.data;
         xmr_payment.payment_id        = pod_to_hex(random_payment_id8);
-        xmr_payment.import_fee        = current_bc_status->get_bc_setup().import_fee; // xmr
+        xmr_payment.import_fee        = current_bc_status
+                                            ->get_bc_setup().import_fee; // xmr
         xmr_payment.request_fulfilled = false;
         xmr_payment.tx_hash           = ""; // no tx_hash yet with the payment
         xmr_payment.payment_address   = integrated_address;
@@ -1086,9 +1196,11 @@ YourMoneroRequests::import_wallet_request(const shared_ptr< Session > session, c
             // payment entry created
 
             j_response["payment_id"]        = payment_table_id;
-            j_response["import_fee"]        = xmr_payment.import_fee;
+            j_response["import_fee"]        = std::to_string(
+                                                xmr_payment.import_fee);
             j_response["new_request"]       = true;
-            j_response["request_fulfilled"] = bool {xmr_payment.request_fulfilled};
+            j_response["request_fulfilled"]
+                                         = bool {xmr_payment.request_fulfilled};
             j_response["payment_address"]   = xmr_payment.payment_address;
             j_response["status"]            = "Payment not yet received";
             j_response["error"]             = "";
@@ -1097,7 +1209,8 @@ YourMoneroRequests::import_wallet_request(const shared_ptr< Session > session, c
 
     string response_body = j_response.dump();
 
-    auto response_headers = make_headers({{ "Content-Length", to_string(response_body.size())}});
+    auto response_headers = make_headers({{ "Content-Length",
+                                            std::to_string(response_body.size())}});
 
     session->close( OK, response_body, response_headers);
 }
@@ -1105,7 +1218,8 @@ YourMoneroRequests::import_wallet_request(const shared_ptr< Session > session, c
 
 
 void
-YourMoneroRequests::import_recent_wallet_request(const shared_ptr< Session > session, const Bytes & body)
+YourMoneroRequests::import_recent_wallet_request(
+        const shared_ptr< Session > session, const Bytes & body)
 {
     json j_response;
     json j_request;
@@ -1114,7 +1228,8 @@ YourMoneroRequests::import_recent_wallet_request(const shared_ptr< Session > ses
 
     j_response["request_fulfilled"] = false;
 
-    vector<string> requested_values {"address" , "view_key", "no_blocks_to_import"};
+    vector<string> requested_values {"address" , "view_key",
+                                     "no_blocks_to_import"};
 
     if (!parse_request(body, requested_values, j_request, j_response))
     {
@@ -1142,11 +1257,15 @@ YourMoneroRequests::import_recent_wallet_request(const shared_ptr< Session > ses
 
     try
     {
-        no_blocks_to_import = boost::lexical_cast<uint64_t>(j_request["no_blocks_to_import"].get<string>());
+        no_blocks_to_import
+                = boost::lexical_cast<uint64_t>(
+                    j_request["no_blocks_to_import"].get<string>());
     }
     catch (boost::bad_lexical_cast& e)
     {
-        string msg = "Cant parse " + j_request["no_blocks_to_import"].get<string>() + " into number";
+        string msg = "Cant parse "
+                + j_request["no_blocks_to_import"].get<string>()
+                + " into number";
 
         cerr << msg << '\n';
 
@@ -1157,10 +1276,12 @@ YourMoneroRequests::import_recent_wallet_request(const shared_ptr< Session > ses
 
     // make sure that we dont import more that the maximum alowed no of blocks
     no_blocks_to_import = std::min(no_blocks_to_import,
-                                   current_bc_status->get_bc_setup().max_number_of_blocks_to_import);
+                                   current_bc_status->get_bc_setup()
+                                   .max_number_of_blocks_to_import);
 
-    no_blocks_to_import = std::min(no_blocks_to_import,
-                                   current_bc_status->get_current_blockchain_height());
+    no_blocks_to_import
+            = std::min(no_blocks_to_import,
+                      current_bc_status->get_current_blockchain_height());
 
     XmrAccount acc;
 
@@ -1168,21 +1289,27 @@ YourMoneroRequests::import_recent_wallet_request(const shared_ptr< Session > ses
     {
         XmrAccount updated_acc = acc;
 
-        // make sure scanned_block_height is larger than  no_blocks_to_import so we dont
+        // make sure scanned_block_height is larger than
+        // no_blocks_to_import so we dont
         // end up with overflowing uint64_t.
 
         if (updated_acc.scanned_block_height >= no_blocks_to_import)
         {
-            // repetead calls to import_recent_wallet_request will be moving the scanning backward.
-            // not sure yet if any protection is needed to make sure that a user does not
-            // go back too much back by importing his/hers wallet multiple times in a row.
-            updated_acc.scanned_block_height = updated_acc.scanned_block_height - no_blocks_to_import;
+            // repetead calls to import_recent_wallet_request will be
+            // moving the scanning backward.
+            // not sure yet if any protection is needed to
+            // make sure that a user does not
+            // go back too much back by importing his/hers
+            // wallet multiple times in a row.
+            updated_acc.scanned_block_height
+                    = updated_acc.scanned_block_height - no_blocks_to_import;
 
             if (xmr_accounts->update(acc, updated_acc))
             {
                 // change search blk number in the search thread
-                if (!current_bc_status->set_new_searched_blk_no(xmr_address,
-                                                                      updated_acc.scanned_block_height))
+                if (!current_bc_status
+                        ->set_new_searched_blk_no(xmr_address,
+                                    updated_acc.scanned_block_height))
                 {
                     cerr << "Updating searched_blk_no failed!" << endl;
                     j_response["Error"]  = "Updating searched_blk_no failed!";
@@ -1198,19 +1325,22 @@ YourMoneroRequests::import_recent_wallet_request(const shared_ptr< Session > ses
     }
     else
     {
-        cerr << "Updating account with new scanned_block_height failed! " << endl;
-        j_response["status"] = "Updating account with new scanned_block_height failed!";
+        cerr << "Updating account with new scanned_block_height failed!\n";
+        j_response["status"]
+                = "Updating account with new scanned_block_height failed!";
     }
 
     if (request_fulfilled)
     {
         j_response["request_fulfilled"] = request_fulfilled;
-        j_response["status"]            = "Updating account with for importing recent txs successeful.";
+        j_response["status"]  = "Updating account with for"
+                                " importing recent txs successeful.";
     }
 
     string response_body = j_response.dump();
 
-    auto response_headers = make_headers({{ "Content-Length", to_string(response_body.size())}});
+    auto response_headers = make_headers({{ "Content-Length",
+                                            std::to_string(response_body.size())}});
 
     session->close( OK, response_body, response_headers);
 }
@@ -1218,7 +1348,8 @@ YourMoneroRequests::import_recent_wallet_request(const shared_ptr< Session > ses
 
 
 void
-YourMoneroRequests::get_tx(const shared_ptr< Session > session, const Bytes & body)
+YourMoneroRequests::get_tx(
+        const shared_ptr< Session > session, const Bytes & body)
 {
     json j_response;
     json j_request;
@@ -1274,6 +1405,7 @@ YourMoneroRequests::get_tx(const shared_ptr< Session > session, const Bytes & bo
     {
         // if tx not found in the blockchain, check if its in mempool
 
+                // recieved_time, tx
         vector<pair<uint64_t, transaction>> mempool_txs =
                 current_bc_status->get_mempool_txs();
 
@@ -1306,7 +1438,8 @@ YourMoneroRequests::get_tx(const shared_ptr< Session > session, const Bytes & bo
         // delivered the tx that was requested
         j_response["tx_hash"]  = pod_to_hex(tx_hash);
 
-        j_response["pub_key"]  = pod_to_hex(xmreg::get_tx_pub_key_from_received_outs(tx));
+        j_response["pub_key"]  = pod_to_hex(
+                    xmreg::get_tx_pub_key_from_received_outs(tx));
 
 
         bool coinbase = is_coinbase(tx);
@@ -1325,7 +1458,6 @@ YourMoneroRequests::get_tx(const shared_ptr< Session > session, const Bytes & bo
         uint64_t fee {0};
         uint64_t mixin_no;
         uint64_t size;
-        uint64_t blk_height;
 
         // sum xmr in inputs and ouputs in the given tx
         array<uint64_t, 4> const& sum_data = xmreg::summary_of_in_out_rct(
@@ -1361,8 +1493,8 @@ YourMoneroRequests::get_tx(const shared_ptr< Session > session, const Bytes & bo
         j_response["size"] = size;
 
         // to be field later on using data from OutputInputIdentification
-        j_response["total_sent"] = 0;
-        j_response["total_received"] = 0;
+        j_response["total_sent"] = "0";
+        j_response["total_received"] = "0";
 
         int64_t tx_height {-1};
 
@@ -1389,13 +1521,17 @@ YourMoneroRequests::get_tx(const shared_ptr< Session > session, const Bytes & bo
         // scrach, i.e., search for outputs. We could get this info
         // directly from the database, but doing it again here, is a good way
         // to double check tx data in the frontend, and also maybe try doing
-        // it differently than before. Its not great, since we reinvent the wheel
-        // but its worth double checking the mysql data, and also allows for new
+        // it differently than before. Its not great, since we reinvent
+        // the wheel
+        // but its worth double checking
+        // the mysql data, and also allows for new
         // implementation in the frontend.
-        if (current_bc_status->get_xmr_address_viewkey(xmr_address, address_info, viewkey))
+        if (current_bc_status->get_xmr_address_viewkey(
+                    xmr_address, address_info, viewkey))
         {
-            OutputInputIdentification oi_identification {&address_info, &viewkey, &tx,
-                                                         tx_hash, coinbase, current_bc_status};
+            OutputInputIdentification oi_identification {
+                &address_info, &viewkey, &tx, tx_hash,
+                        coinbase};
 
             oi_identification.identify_outputs();
 
@@ -1409,7 +1545,7 @@ YourMoneroRequests::get_tx(const shared_ptr< Session > session, const Bytes & bo
                 total_received += out_info.amount;
             }
 
-            j_response["total_received"] = total_received;
+            j_response["total_received"] = std::to_string(total_received);
 
             json j_spent_outputs = json::array();
 
@@ -1441,14 +1577,17 @@ YourMoneroRequests::get_tx(const shared_ptr< Session > session, const Bytes & bo
 
                     XmrTransaction xmr_tx;
 
-                    if (xmr_accounts->tx_exists(acc.id.data, tx_hash_str, xmr_tx))
+                    if (xmr_accounts->tx_exists(
+                                acc.id.data, tx_hash_str, xmr_tx))
                     {
                         j_response["payment_id"] = xmr_tx.payment_id;
-                        j_response["timestamp"]  = static_cast<uint64_t>(xmr_tx.timestamp);
+                        j_response["timestamp"]
+                                = static_cast<uint64_t>(xmr_tx.timestamp*1e3);
 
                         vector<XmrInput> inputs;
 
-                        if (xmr_accounts->select_for_tx(xmr_tx.id.data, inputs))
+                        if (xmr_accounts->select_for_tx(
+                                    xmr_tx.id.data, inputs))
                         {
                             json j_spent_outputs = json::array();
 
@@ -1458,12 +1597,14 @@ YourMoneroRequests::get_tx(const shared_ptr< Session > session, const Bytes & bo
                             {
                                 XmrOutput out;
 
-                                if (xmr_accounts->select_by_primary_id(input.output_id, out))
+                                if (xmr_accounts
+                                        ->select_by_primary_id(
+                                            input.output_id, out))
                                 {
                                     total_spent += input.amount;
 
                                     j_spent_outputs.push_back({
-                                          {"amount"     , input.amount},
+                                          {"amount"     , std::to_string(input.amount)},
                                           {"key_image"  , input.key_image},
                                           {"tx_pub_key" , out.tx_pub_key},
                                           {"out_index"  , out.out_index},
@@ -1472,13 +1613,13 @@ YourMoneroRequests::get_tx(const shared_ptr< Session > session, const Bytes & bo
 
                             } // for (XmrInput input: inputs)
 
-                            j_response["total_sent"]    = total_spent;
+                            j_response["total_sent"]    = std::to_string(total_spent);
 
                             j_response["spent_outputs"] = j_spent_outputs;
 
-                        } // if (xmr_accounts->select_inputs_for_tx(tx.id, inputs))
+                        } // if (xmr_accounts->select_inputs_
 
-                    }  // if (xmr_accounts->tx_exists(acc.id, tx_hash_str, xmr_tx))
+                    }  // if (xmr_accounts->tx_exists(acc.id
 
                 } // if (!tx_in_mempool)
                 else
@@ -1497,14 +1638,17 @@ YourMoneroRequests::get_tx(const shared_ptr< Session > session, const Bytes & bo
                         // so now we can use OutputInputIdentification to
                         // get info about inputs.
 
-                        // Class that is resposnible for idenficitaction of our outputs
+                        // Class that is resposnible for idenficitaction
+                        // of our outputs
                         // and inputs in a given tx.
                         OutputInputIdentification oi_identification
-                                {&address_info, &viewkey, &tx, tx_hash, coinbase, current_bc_status};
+                                {&address_info, &viewkey, &tx, tx_hash,
+                                    coinbase};
 
-                        // no need mutex here, as this will be exectued only after
-                        // the above. there is no threads here.
-                        oi_identification.identify_inputs(known_outputs_keys);
+                        // no need mutex here, as this will be exectued only
+                        // after the above. there is no threads here.
+                        oi_identification.identify_inputs(known_outputs_keys,
+                                                          current_bc_status.get());
 
                         json j_spent_outputs = json::array();
 
@@ -1518,23 +1662,24 @@ YourMoneroRequests::get_tx(const shared_ptr< Session > session, const Bytes & bo
                             // tx public key and its index in that tx
                             XmrOutput out;
 
-                            string out_pub_key = pod_to_hex(in_info.out_pub_key);
+                            string out_pub_key
+                                    = pod_to_hex(in_info.out_pub_key);
 
                             if (xmr_accounts->output_exists(out_pub_key, out))
                             {
                                 total_spent += out.amount;
 
                                 j_spent_outputs.push_back({
-                                          {"amount"     , in_info.amount},
+                                          {"amount"     , std::to_string(in_info.amount)},
                                           {"key_image"  , in_info.key_img},
                                           {"tx_pub_key" , out.tx_pub_key},
                                           {"out_index"  , out.out_index},
                                           {"mixin"      , out.mixin}});
                             }
 
-                        } //  for (auto& in_info: oi_identification.identified_inputs)
+                        } //  for (auto& in_info: oi_identification
 
-                        j_response["total_sent"]    = total_spent;
+                        j_response["total_sent"]    = std::to_string(total_spent);
 
                         j_response["spent_outputs"] = j_spent_outputs;
 
@@ -1545,7 +1690,7 @@ YourMoneroRequests::get_tx(const shared_ptr< Session > session, const Bytes & bo
 
             } //  if (xmr_accounts->select(xmr_address, acc))
 
-        } //  if (current_bc_status->get_xmr_address_viewkey(address_str, address, viewkey)
+        } //  if (current_bc_status->get_xmr_add
 
         j_response["tx_height"]         = tx_height;
         j_response["no_confirmations"]  = no_confirmations;
@@ -1560,30 +1705,37 @@ YourMoneroRequests::get_tx(const shared_ptr< Session > session, const Bytes & bo
 
     string response_body = j_response.dump();
 
-    auto response_headers = make_headers({{ "Content-Length", to_string(response_body.size())}});
+    auto response_headers = make_headers({{ "Content-Length",
+                                            to_string(response_body.size())}});
 
     session->close( OK, response_body, response_headers);
 }
 
 
 void
-YourMoneroRequests::get_version(const shared_ptr< Session > session, const Bytes & body)
+YourMoneroRequests::get_version(
+        const shared_ptr< Session > session,
+        const Bytes & body)
 {
+
+    (void) body;
 
     json j_response {
         {"last_git_commit_hash", string {GIT_COMMIT_HASH}},
         {"last_git_commit_date", string {GIT_COMMIT_DATETIME}},
         {"git_branch_name"     , string {GIT_BRANCH_NAME}},
-        {"bittube_version_full" , string {BITTUBE_VERSION_FULL}},
+        {"monero_version_full" , string {BITTUBE_VERSION_FULL}},
         {"api"                 , OPENMONERO_RPC_VERSION},
-        {"testnet"             , current_bc_status->get_bc_setup().net_type  == network_type::TESTNET},
+        {"testnet"             , current_bc_status->get_bc_setup().net_type
+                    == network_type::TESTNET},
         {"network_type"        , current_bc_status->get_bc_setup().net_type},
         {"blockchain_height"   , get_current_blockchain_height()}
     };
 
     string response_body = j_response.dump();
 
-    auto response_headers = make_headers({{ "Content-Length", to_string(response_body.size())}});
+    auto response_headers = make_headers({{ "Content-Length",
+                                            to_string(response_body.size())}});
 
     session->close( OK, response_body, response_headers);
 }
@@ -1591,10 +1743,13 @@ YourMoneroRequests::get_version(const shared_ptr< Session > session, const Bytes
 
 shared_ptr<Resource>
 YourMoneroRequests::make_resource(
-        function< void (YourMoneroRequests&, const shared_ptr< Session >, const Bytes& ) > handle_func,
+        function< void (YourMoneroRequests&, const shared_ptr< Session >,
+                        const Bytes& ) > handle_func,
         const string& path)
 {
-    auto a_request = std::bind(handle_func, *this, std::placeholders::_1, std::placeholders::_2);
+    auto a_request = std::bind(handle_func, *this,
+                               std::placeholders::_1,
+                               std::placeholders::_2);
 
     shared_ptr<Resource> resource_ptr = make_shared<Resource>();
 
@@ -1607,13 +1762,16 @@ YourMoneroRequests::make_resource(
 
 
 void
-YourMoneroRequests::generic_options_handler( const shared_ptr< Session > session )
+YourMoneroRequests::generic_options_handler(
+        const shared_ptr< Session > session )
 {
     const auto request = session->get_request( );
 
     size_t content_length = request->get_header( "Content-Length", 0);
 
-    session->fetch(content_length, [](const shared_ptr< Session > session, const Bytes & body)
+    session->fetch(content_length,
+                   [](const shared_ptr< Session > session,
+                   const Bytes & body)
     {
         session->close( OK, string{}, make_headers());
     });
@@ -1621,7 +1779,8 @@ YourMoneroRequests::generic_options_handler( const shared_ptr< Session > session
 
 
 multimap<string, string>
-YourMoneroRequests::make_headers(const multimap<string, string>& extra_headers)
+YourMoneroRequests::make_headers(
+        const multimap<string, string>& extra_headers)
 {
     multimap<string, string> headers {
             {"Access-Control-Allow-Origin"     , "*"},
@@ -1696,27 +1855,59 @@ YourMoneroRequests::login_and_start_search_thread(
             // to that account and updated mysql database whenever it
             // will find something.
             //
-            // The other client (i.e., a webbrowser) will query other functions to retrieve
-            // any belonging transactions in a loop. Thus the thread does not need
+            // The other client (i.e., a webbrowser) will query other
+            // functions to retrieve
+            // any belonging transactions in a loop.
+            // Thus the thread does not need
             // to do anything except looking for tx and updating mysql
             // with relative tx information
 
-            if (current_bc_status->start_tx_search_thread(acc))
+            if (!current_bc_status->search_thread_exist(acc.address))
+            {
+                std::unique_ptr<TxSearch> tx_search;
+
+                try
+                {
+                    tx_search
+                            = std::make_unique<TxSearch>(acc,
+                                                         current_bc_status);
+                }
+                catch (std::exception const& e)
+                {
+                    OMERROR << "TxSearch construction faild.";
+                    j_response = json {{"status", "error"},
+                                       {"reason", "Failed to construct "
+                                                  "TxSearch object"}};
+                    return false;
+                }
+
+
+                if (current_bc_status->start_tx_search_thread(
+                            acc, std::move(tx_search)))
+                {
+                    j_response["status"]      = "success";
+                    j_response["new_address"] = false;
+
+                    // thread has been started
+                    // everything seems fine.
+
+                    return true;
+                }
+            }
+            else
             {
                 j_response["status"]      = "success";
                 j_response["new_address"] = false;
 
-                // thread has been started or already exists.
+                // thread already exists
                 // everything seems fine.
 
                 return true;
             }
-            else
-            {
-                j_response = json {{"status", "error"},
-                                   {"reason", "Failed created search thread for this account"}};
-            }
 
+            j_response = json {{"status", "error"},
+                               {"reason", "Failed created search "
+                                          "thread for this account"}};
         }
         else
         {
@@ -1731,9 +1922,11 @@ YourMoneroRequests::login_and_start_search_thread(
 
 
 void
-YourMoneroRequests::session_close(const shared_ptr< Session > session, string response_body)
+YourMoneroRequests::session_close(
+        const shared_ptr< Session > session, string response_body)
 {
-    auto response_headers = make_headers({{"Content-Length", to_string(response_body.size())}});
+    auto response_headers = make_headers({{"Content-Length",
+                                           to_string(response_body.size())}});
     session->close(OK, response_body, response_headers);
 }
 
