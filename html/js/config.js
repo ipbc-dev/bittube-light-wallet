@@ -1,5 +1,5 @@
 var config = {
-    apiUrl: "http://67.211.220.134:8088/",
+    apiUrl: "http://104.37.188.253:8088/",
     mainnetExplorerUrl: "http://explorer.bit.tube/",
     testnetExplorerUrl: "https://testnet.xmrchain.com/",
     stagenetExplorerUrl: "http://162.210.173.150:8083/",

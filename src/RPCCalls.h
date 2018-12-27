@@ -6,7 +6,7 @@
 #ifndef CROWXMR_RPCCALLS_H
 #define CROWXMR_RPCCALLS_H
 
-#include "monero_headers.h"
+#include "bittube_headers.h"
 
 #include <mutex>
 
@@ -35,7 +35,7 @@ class RPCCalls
 
 public:
 
-    RPCCalls(string _deamon_url = "http:://127.0.0.1:18081",
+    RPCCalls(string _deamon_url = "http:://127.0.0.1:24181",
              uint64_t _timeout = 200000);    
 
     RPCCalls(RPCCalls&& a);

@@ -114,7 +114,7 @@ auto current_bc_status
 // of the blockchain (e.g., current height) .This is the only class
 // that has direct access to blockchain and talks (using rpc calls)
 // with the monero deamon.
-if (!current_bc_status->init_monero_blockchain())
+if (!current_bc_status->init_bittube_blockchain())
 {
     OMERROR << "Error accessing blockchain.";
     return EXIT_FAILURE;

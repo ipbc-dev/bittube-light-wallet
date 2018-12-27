@@ -18,9 +18,9 @@
     "_comment" : "how should the backend connect to the mysql database",
     "url"      : "127.0.0.1",
     "port"     : 3306,
-    "dbname"   : "italos_light",
-    "user"     : "italos_light",
-    "password" : "pdWlTAf34x"
+    "dbname"   : "openmonero",
+    "user"     : "openmonero",
+    "password" : "pass"
   },
   "database_test":
   {
