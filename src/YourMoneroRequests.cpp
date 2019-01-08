@@ -527,7 +527,7 @@ YourMoneroRequests::get_unspent_outs(const shared_ptr< Session > session, const 
     string view_key;
     uint64_t mixin {4};
     bool use_dust {false};
-    uint64_t dust_threshold {1000000000};
+    uint64_t dust_threshold {100000};
     uint64_t amount {0};
 
     try
