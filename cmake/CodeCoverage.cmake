@@ -41,6 +41,8 @@
 # 2017-06-02, Lars Bilke
 # - Merged with modified version from github.com/ufz/ogs
 #
+# 2018-08-02, moneroexamples
+# - Modified to use gcovr rather than lcov
 #
 # USAGE:
 #
@@ -69,15 +71,11 @@
 include(CMakeParseArguments)
 
 # Check prereqs
-find_program( GCOV_PATH gcov )
-find_program( LCOV_PATH  NAMES lcov lcov.bat lcov.exe lcov.perl)
-find_program( GENHTML_PATH NAMES genhtml genhtml.perl genhtml.bat )
 find_program( GCOVR_PATH gcovr PATHS ${CMAKE_SOURCE_DIR}/scripts/test)
-find_program( SIMPLE_PYTHON_EXECUTABLE python )
 
-if(NOT GCOV_PATH)
-    message(FATAL_ERROR "gcov not found! Aborting...")
-endif() # NOT GCOV_PATH
+if(NOT GCOVR_PATH)
+    message(FATAL_ERROR "gcovr not found! Aborting...")
+endif() # NOT GCOVR_PATH
 
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
     if("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 3)
@@ -89,9 +87,6 @@ endif()
 
 set(COVERAGE_COMPILER_FLAGS "-g -O0 --coverage -fprofile-arcs -ftest-coverage"
     CACHE INTERNAL "")
-
-#set(COVERAGE_COMPILER_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage"
-#    CACHE INTERNAL "")
 
 
 set(CMAKE_CXX_FLAGS_COVERAGE
@@ -143,13 +138,13 @@ function(SETUP_TARGET_FOR_COVERAGE)
     set(multiValueArgs EXECUTABLE EXECUTABLE_ARGS DEPENDENCIES)
     cmake_parse_arguments(Coverage "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    if(NOT LCOV_PATH)
-        message(FATAL_ERROR "lcov not found! Aborting...")
-    endif() # NOT LCOV_PATH
+   # if(NOT LCOV_PATH)
+   #     message(FATAL_ERROR "lcov not found! Aborting...")
+   # endif() # NOT LCOV_PATH
 
-    if(NOT GENHTML_PATH)
-        message(FATAL_ERROR "genhtml not found! Aborting...")
-    endif() # NOT GENHTML_PATH
+   # if(NOT GENHTML_PATH)
+   #     message(FATAL_ERROR "genhtml not found! Aborting...")
+   # endif() # NOT GENHTML_PATH
 
     # Setup target
     add_custom_target(${Coverage_NAME}
@@ -197,57 +192,6 @@ function(SETUP_TARGET_FOR_COVERAGE)
 
 endfunction() # SETUP_TARGET_FOR_COVERAGE
 
-# Defines a target for running and collection code coverage information
-# Builds dependencies, runs the given executable and outputs reports.
-# NOTE! The executable should always have a ZERO as exit code otherwise
-# the coverage generation will not complete.
-#
-# SETUP_TARGET_FOR_COVERAGE_COBERTURA(
-#     NAME ctest_coverage                    # New target name
-#     EXECUTABLE ctest -j ${PROCESSOR_COUNT} # Executable in PROJECT_BINARY_DIR
-#     DEPENDENCIES executable_target         # Dependencies to build first
-# )
-function(SETUP_TARGET_FOR_COVERAGE_COBERTURA)
-
-    set(options NONE)
-    set(oneValueArgs NAME)
-    set(multiValueArgs EXECUTABLE EXECUTABLE_ARGS DEPENDENCIES)
-    cmake_parse_arguments(Coverage "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-
-    if(NOT SIMPLE_PYTHON_EXECUTABLE)
-        message(FATAL_ERROR "python not found! Aborting...")
-    endif() # NOT SIMPLE_PYTHON_EXECUTABLE
-
-    if(NOT GCOVR_PATH)
-        message(FATAL_ERROR "gcovr not found! Aborting...")
-    endif() # NOT GCOVR_PATH
-
-    # Combine excludes to several -e arguments
-    set(COBERTURA_EXCLUDES "")
-    foreach(EXCLUDE ${COVERAGE_EXCLUDES})
-        set(COBERTURA_EXCLUDES "-e ${EXCLUDE} ${COBERTURA_EXCLUDES}")
-    endforeach()
-
-    add_custom_target(${Coverage_NAME}
-
-        # Run tests
-        ${Coverage_EXECUTABLE}
-
-        # Running gcovr
-        COMMAND ${GCOVR_PATH} -x -r ${CMAKE_SOURCE_DIR} ${COBERTURA_EXCLUDES}
-            -o ${Coverage_NAME}.xml
-        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
-        DEPENDS ${Coverage_DEPENDENCIES}
-        COMMENT "Running gcovr to produce Cobertura code coverage report."
-    )
-
-    # Show info where to find the report
-    add_custom_command(TARGET ${Coverage_NAME} POST_BUILD
-        COMMAND ;
-        COMMENT "Cobertura code coverage report saved in ${Coverage_NAME}.xml."
-    )
-
-endfunction() # SETUP_TARGET_FOR_COVERAGE_COBERTURA
 
 function(APPEND_COVERAGE_COMPILER_FLAGS)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COVERAGE_COMPILER_FLAGS}" PARENT_SCOPE)

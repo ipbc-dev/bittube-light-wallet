@@ -2,6 +2,9 @@
 // Created by mwo on 12/07/18.
 //
 
+#include "easylogging++.h"
+#include "om_log.h"
+
 #include "MysqlPing.h"
 
 
@@ -10,7 +13,7 @@ namespace xmreg
 
 MysqlPing::MysqlPing(
         std::shared_ptr<MySqlConnector> _conn,
-        uint64_t _ping_time)
+        seconds _ping_time)
         : conn {_conn}, ping_time {_ping_time}
 {}
 
@@ -25,16 +28,16 @@ MysqlPing::operator()()
         {
             if (!c->ping())
             {
-                cerr << "Pinging mysql failed. Stoping mysql pinging thread. \n";
+                OMERROR << "Pinging mysql failed. Stoping mysql pinging thread.";
                 why_stoped = StopReason::PingFailed;
                 break;
             }
 
-            cout << "Mysql ping successful. \n" ;
+            OMINFO << "Mysql ping successful." ;
         }
         else
         {
-            cerr << "std::weak_ptr<MySqlConnector> conn expired! \n";
+            OMERROR << "std::weak_ptr<MySqlConnector> conn expired!";
             why_stoped = StopReason::PointerExpired;
             break;
         }

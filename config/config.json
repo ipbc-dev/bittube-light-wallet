@@ -2,14 +2,14 @@
   "daemon-url" :
   {
     "_comment" : "RPC urls to monero deamon",
-    "mainnet"  : "http://127.0.0.1:18081",
-    "testnet"  : "http://127.0.0.1:28081",
-    "stagenet" : "http://127.0.0.1:38081"
+    "mainnet"  : "http://127.0.0.1:24182",
+    "testnet"  : "http://127.0.0.1:34182",
+    "stagenet" : "http://127.0.0.1:44182"
   },
   "blockchain-path" :
   {
     "_comment" : "if paths are empty, default Monero paths will be used",
-    "mainnet"  : "",
+    "mainnet"  : "/root/.bittube/lmdb",
     "testnet"  : "",
     "stagenet" : ""
   },
@@ -19,8 +19,8 @@
     "url"      : "127.0.0.1",
     "port"     : 3306,
     "dbname"   : "openmonero",
-    "user"     : "root",
-    "password" : "root"
+    "user"     : "openmonero",
+    "password" : "pass"
   },
   "database_test":
   {
@@ -43,8 +43,8 @@
     "mainnet" :
     {
       "_comment": "these are official monero project donation address and viewkey. change it to yours",
-      "address" : "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A",
-      "viewkey" : "f359631075708155cc3d92a32b75a7d02a5dcf27756707b47a2b31b21c389501"
+      "address" : "bxcmCVeX65oe6hV4UHPYuBWo7fTC6jMUkJpLUrakrSavNgZLfgUMEKpgksTkShgQcY1wRzfGYV5MsRPQbSeFRUYU2Vj2Bt1BJ",
+      "viewkey" : "dcdf3f612547edb017da90284341059c579cde3d26fa91cbdaa49ff3c8edae27"
     },
     "stagenet" :
     {
@@ -56,6 +56,7 @@
   "blocks_search_lookahead"            : 200,
   "search_thread_life_in_seconds"      : 120,
   "max_number_of_blocks_to_import"     : 132000,
+  "mysql_ping_every_seconds"           : 300,
   "ssl" :
   {
     "enable" : false,

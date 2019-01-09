@@ -1,5 +1,5 @@
 var config = {
-    apiUrl: "http://mywallet.bit.tube:8088/",
+    apiUrl: "http://104.37.188.253:8088/",
     mainnetExplorerUrl: "http://explorer.bit.tube/",
     testnetExplorerUrl: "https://testnet.xmrchain.com/",
     stagenetExplorerUrl: "http://162.210.173.150:8083/",
@@ -23,7 +23,7 @@ var config = {
     feePerKB: new JSBigInt('2000000000'),//20^10 - not used anymore, as fee is dynamic.
     dustThreshold: new JSBigInt('10000000'),//10^10 used for choosing outputs/change - we decompose all the way down if the receiver wants now regardless of threshold
     txChargeRatio: 0.5,
-    defaultMixin: 7, // minimum mixin for hardfork v7 is 6 (ring size 7)
+    defaultMixin: 2, // minimum mixin for hardfork v7 is 6 (ring size 7)
     txChargeAddress: '',
     idleTimeout: 30,
     idleWarningDuration: 20,

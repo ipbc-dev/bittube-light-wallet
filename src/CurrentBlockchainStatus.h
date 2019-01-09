@@ -1,16 +1,18 @@
-//
-// Created by mwo on 14/12/16.
-//
-
-#ifndef RESTBED_XMR_CURRENTBLOCKCHAINSTATUS_H
-#define RESTBED_XMR_CURRENTBLOCKCHAINSTATUS_H
+#pragma once
 
 #define MYSQLPP_SSQLS_NO_STATICS 1
 
+#include "om_log.h"
 #include "MicroCore.h"
 #include "ssqlses.h"
+#include "TxUnlockChecker.h"
 #include "BlockchainSetup.h"
 #include "TxSearch.h"
+#include "tools.h"
+#include "ThreadRAII.h"
+#include "RPCCalls.h"
+#include "MySqlAccounts.h"
+#include "RandomOutputs.h"
 
 #include <iostream>
 #include <memory>
@@ -26,8 +28,6 @@ using namespace std;
 class XmrAccount;
 class MySqlAccounts;
 
-static mutex searching_threads_map_mtx;
-static mutex getting_mempool_txs;
 
 /*
 * This is a thread class. Probably it should be singleton, as we want
@@ -37,26 +37,33 @@ static mutex getting_mempool_txs;
 *
 * This way its much easier to mock it for unit testing.
 */
-class CurrentBlockchainStatus : public std::enable_shared_from_this<CurrentBlockchainStatus>
+class CurrentBlockchainStatus
+        : public std::enable_shared_from_this<CurrentBlockchainStatus>
 {
 public:
+
+
     // vector of mempool transactions that all threads
     // can refer to
     //                               recieved_time, tx
     using mempool_txs_t = vector<pair<uint64_t, transaction>>;
 
 
-    //                            tx_hash      , tx,          height , timestamp, is_coinbase
-    using txs_tuple_t = std::tuple<crypto::hash, transaction, uint64_t, uint64_t, bool>;
+    //              height , timestamp, is_coinbase
+    using txs_tuple_t
+        = std::tuple<uint64_t, uint64_t, bool>;
 
     atomic<uint64_t> current_height;
 
-    bool is_running;
+    atomic<bool> is_running;
+    atomic<bool> stop_blockchain_monitor_loop;
 
-    CurrentBlockchainStatus(BlockchainSetup _bc_setup);
+    CurrentBlockchainStatus(BlockchainSetup _bc_setup,
+                            std::unique_ptr<MicroCore> _mcore,
+                            std::unique_ptr<RPCCalls> _rpc);
 
     virtual void
-    start_monitor_blockchain_thread();
+    monitor_blockchain();
 
     virtual uint64_t
     get_current_blockchain_height();
@@ -67,11 +74,15 @@ public:
     virtual bool
     init_bittube_blockchain();
 
+    // inject TxUnlockChecker object
+    // its simplifies mocking its behavior in our
+    // tests, as we just inject mock version of
+    // TxUnlockChecker class
     virtual bool
-    is_tx_unlocked(uint64_t unlock_time, uint64_t block_height);
-
-    virtual bool
-    is_tx_spendtime_unlocked(uint64_t unlock_time, uint64_t block_height);
+    is_tx_unlocked(uint64_t unlock_time,
+                   uint64_t block_height,
+                   TxUnlockChecker const& tx_unlock_checker
+                        = TxUnlockChecker());
 
     virtual bool
     get_block(uint64_t height, block &blk);
@@ -99,9 +110,6 @@ public:
     tx_exist(const string& tx_hash_str, uint64_t& tx_index);
 
     virtual bool
-    tx_exist(const string& tx_hash_str);
-
-    virtual bool
     get_tx_with_output(uint64_t output_idx, uint64_t amount,
                        transaction& tx, uint64_t& output_idx_in_tx);
 
@@ -111,10 +119,12 @@ public:
                     vector<cryptonote::output_data_t>& outputs);
 
     virtual string
-    get_account_integrated_address_as_str(crypto::hash8 const& payment_id8);
+    get_account_integrated_address_as_str(
+            crypto::hash8 const& payment_id8);
 
     virtual string
-    get_account_integrated_address_as_str(string const& payment_id8_str);
+    get_account_integrated_address_as_str(
+            string const& payment_id8_str);
 
     virtual bool
     get_output(const uint64_t amount,
@@ -126,12 +136,19 @@ public:
                                 vector<uint64_t>& out_indices);
 
     virtual bool
-    get_random_outputs(const vector<uint64_t>& amounts,
-                       const uint64_t& outs_count,
-                       vector<COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& found_outputs);
+    get_random_outputs(vector<uint64_t> const& amounts,
+                       uint64_t outs_count,
+                       RandomOutputs::outs_for_amount_v&
+                       found_outputs);
 
-    virtual bool
-    get_dynamic_per_kb_fee_estimate(uint64_t& fee_estimated);
+    virtual uint64_t
+    get_dynamic_per_kb_fee_estimate() const;
+
+    virtual uint64_t
+    get_dynamic_base_fee_estimate() const;
+
+    virtual uint64_t
+    get_tx_unlock_time(crypto::hash const& tx_hash) const;
 
     virtual bool
     commit_tx(const string& tx_blob, string& error_msg,
@@ -160,7 +177,8 @@ public:
     // definitions of these function are at the end of this file
     // due to forward declaraions of TxSearch
     virtual bool
-    start_tx_search_thread(XmrAccount acc);
+    start_tx_search_thread(XmrAccount acc,
+                           std::unique_ptr<TxSearch> tx_search);
 
     virtual bool
     ping_search_thread(const string& address);
@@ -226,11 +244,25 @@ public:
         return bc_setup;
     }
 
+    inline virtual void
+    set_bc_setup(BlockchainSetup const& bs)
+    {
+        bc_setup = bs;
+    }
 
+    virtual void
+    init_txs_data_vector(vector<block> const& blocks,
+                         vector<crypto::hash>& txs_to_get,
+                         vector<txs_tuple_t>& txs_data);
 
     virtual bool
     get_txs_in_blocks(vector<block> const& blocks,
+                      vector<crypto::hash>& txs_hashes,
+                      vector<transaction>& txs,
                       vector<txs_tuple_t>& txs_data);
+
+    virtual TxSearch&
+    get_search_thread(string const& acc_address);
 
     // default destructor is fine
     virtual ~CurrentBlockchainStatus() = default;
@@ -248,11 +280,17 @@ protected:
     // parameters used to connect/read bittube blockchain
     BlockchainSetup bc_setup;
 
-   // since this class monitors current status
+    // since this class monitors current status
     // of the blockchain, its seems logical to
     // make object for accessing the blockchain here
-    unique_ptr<xmreg::MicroCore> mcore;
-    cryptonote::Blockchain *core_storage;
+    // use pointer for this, so that we can easly
+    // inject mock MicroCore class in our tests
+    // as MicroCore is not copabaly nor movable
+    std::unique_ptr<MicroCore> mcore;
+
+    // this class is also the only class which can
+    // use talk to monero deamon using RPC.
+    std::unique_ptr<RPCCalls> rpc;
 
     // vector of mempool transactions that all threads
     // can refer to
@@ -262,13 +300,26 @@ protected:
     // map that will keep track of search threads. In the
     // map, key is address to which a running thread belongs to.
     // make it static to guarantee only one such map exist.
-    map<string, unique_ptr<TxSearch>> searching_threads;
+    map<string, ThreadRAII2<TxSearch>> searching_threads;
 
     // thread that will be dispachaed and will keep monitoring blockchain
     // and mempool changes
     std::thread m_thread;
+
+    // to synchronize searching access to searching_threads map
+    mutex searching_threads_map_mtx;
+
+    // to synchronize access to mempool_txs vector
+    mutex getting_mempool_txs;
+
+    // have this method will make it easier to moc
+    // RandomOutputs in our tests later
+    virtual unique_ptr<RandomOutputs>
+    create_random_outputs_object(
+            vector<uint64_t> const& amounts,
+            uint64_t outs_count) const;
+
 };
 
 
 }
-#endif //RESTBED_XMR_CURRENTBLOCKCHAINSTATUS_H
