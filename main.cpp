@@ -267,12 +267,14 @@ if (config_json["ssl"]["enable"])
 
     Uri ssl_key = Uri(config_json["ssl"]["ssl-key"].get<string>());
     Uri ssl_crt = Uri(config_json["ssl"]["ssl-crt"].get<string>());
+    Uri ssl_chain = Uri(config_json["ssl"]["ssl-chain"].get<string>());
     Uri dh_pem  = Uri(config_json["ssl"]["dh-pem"].get<string>());
 
     ssl_settings->set_http_disabled(true);
     ssl_settings->set_port(app_port);
     ssl_settings->set_private_key(ssl_key);
     ssl_settings->set_certificate(ssl_crt);
+    ssl_settings->set_certificate_chain(ssl_chain);
     ssl_settings->set_temporary_diffie_hellman(dh_pem);
 
     settings->set_ssl_settings(ssl_settings);
