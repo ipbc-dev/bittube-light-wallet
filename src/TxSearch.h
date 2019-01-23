@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MySqlAccounts.h"
+#include "db/MySqlAccounts.h"
 #include "OutputInputIdentification.h"
 
 #include <memory>
@@ -45,7 +45,12 @@ private:
     // using the service.
     static seconds thread_search_life;
 
+    // indicate that a thread loop should keep running
     bool continue_search {true};
+
+    // this acctually indicates whether thread loop finished
+    // its execution
+    bool searching_is_ongoing {false};
 
     // to store last exception thrown in the search thread
     // using this, a main thread can get info what went wrong here
@@ -80,6 +85,8 @@ private:
     // address and viewkey for this search thread.
     address_parse_info address;
     secret_key viewkey;
+
+    string address_prefix;
 
 public:
 

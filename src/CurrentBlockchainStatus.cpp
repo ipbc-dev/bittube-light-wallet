@@ -35,9 +35,14 @@ CurrentBlockchainStatus::monitor_blockchain()
        is_running = true;
 
        while (true)
-       {                   
+       {
            if (stop_blockchain_monitor_loop)
+           {
+               stop_search_threads();
+               clean_search_thread_map();
+               OMINFO << "Breaking monitor_blockchain thread loop.";
                break;
+           }
 
            update_current_blockchain_height();           
 
@@ -54,6 +59,8 @@ CurrentBlockchainStatus::monitor_blockchain()
 
        is_running = false;
     }
+
+    OMINFO << "Exiting monitor_blockchain thread loop.";
 }
 
 uint64_t
@@ -212,10 +219,10 @@ CurrentBlockchainStatus::get_tx_with_output(
     catch (const OUTPUT_DNE& e)
     {
 
-        string out_msg = fmt::format(
-                "Output with amount {:d} and index {:d} does not exist!",
-                amount, output_idx
-        );
+        string out_msg = "Output with amount " + std::to_string(amount)
+                         + "  and index " + std::to_string(output_idx) 
+                         + " does not exist!";
+
 
         OMERROR << out_msg << ' ' << e.what();
 
@@ -600,7 +607,8 @@ CurrentBlockchainStatus::start_tx_search_thread(
         searching_threads.insert(
             {acc.address, ThreadRAII2<TxSearch>(std::move(tx_search))});
 
-        OMINFO << "Search thread created for address: " << acc.address;
+        OMINFO << acc.address.substr(0,6)
+                  + ": TxSearch thread created.";
     }
     catch (const std::exception& e)
     {
@@ -836,7 +844,9 @@ CurrentBlockchainStatus::set_new_searched_blk_no(
     if (searching_threads.count(address) == 0)
     {
         // thread does not exist
-        OMERROR << " thread does not exist";
+        OMERROR << address.substr(0,6)
+                   + ": set_new_searched_blk_no failed:"
+                   " thread does not exist";
         return false;
     }
 
@@ -891,6 +901,17 @@ CurrentBlockchainStatus::clean_search_thread_map()
             OMINFO << "Ereasing a search thread";
             searching_threads.erase(st.first);
         }
+    }
+}
+
+void
+CurrentBlockchainStatus::stop_search_threads()
+{
+    std::lock_guard<std::mutex> lck (searching_threads_map_mtx);
+
+    for (auto& st: searching_threads)
+    {
+        st.second.get_functor().stop();
     }
 }
 

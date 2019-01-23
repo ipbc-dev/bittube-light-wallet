@@ -5,9 +5,9 @@
 #define MYSQLPP_SSQLS_NO_STATICS 1
 
 
-#include "YourMoneroRequests.h"
+#include "OpenMoneroRequests.h"
 
-#include "ssqlses.h"
+#include "db/ssqlses.h"
 #include "OutputInputIdentification.h"
 
 namespace xmreg
@@ -28,7 +28,7 @@ handel_::operator()(const shared_ptr< Session > session)
 
 
 
-YourMoneroRequests::YourMoneroRequests(
+OpenMoneroRequests::OpenMoneroRequests(
         shared_ptr<MySqlAccounts> _acc, 
         shared_ptr<CurrentBlockchainStatus> _current_bc_status):
     xmr_accounts {_acc}, current_bc_status {_current_bc_status}
@@ -38,7 +38,7 @@ YourMoneroRequests::YourMoneroRequests(
 
 
 void
-YourMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
+OpenMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
 {
     json j_response;
     json j_request;
@@ -47,7 +47,7 @@ YourMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
 
     if (!parse_request(body, required_values, j_request, j_response))
     {
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     }
 
@@ -62,7 +62,7 @@ YourMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
     catch (json::exception const& e)
     {
         cerr << "json exception: " << e.what() << '\n';
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     }
 
@@ -119,7 +119,7 @@ YourMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
             j_response = json {{"status", "error"},
                                {"reason", "Account creation failed"}};
 
-            session_close(session, j_response.dump());
+            session_close(session, j_response);
             return;
         }
 
@@ -147,17 +147,17 @@ YourMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
     else
     {
         // some error with loggin in or search thread start
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
 
     } // else  if (login_and_start_search_thread(xmr_address,
 
 
-    session_close(session, j_response.dump());
+    session_close(session, j_response);
 }
 
 void
-YourMoneroRequests::get_address_txs(
+OpenMoneroRequests::get_address_txs(
         const shared_ptr< Session > session, const Bytes & body)
 {
     json j_response;
@@ -167,7 +167,7 @@ YourMoneroRequests::get_address_txs(
 
     if (!parse_request(body, requested_values, j_request, j_response))
     {
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     }
 
@@ -181,8 +181,8 @@ YourMoneroRequests::get_address_txs(
     }
     catch (json::exception const& e)
     {
-        cerr << "json exception: " << e.what() << '\n';
-        session_close(session, j_response.dump());
+        OMERROR << "json exception: " << e.what();
+        session_close(session, j_response, UNPROCESSABLE_ENTITY);
         return;
     }
 
@@ -319,7 +319,7 @@ YourMoneroRequests::get_address_txs(
                            {"reason", "Search thread does not exist."}};
 
         // some error with loggin in or search thread start
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     }
 
@@ -389,7 +389,7 @@ YourMoneroRequests::get_address_txs(
 }
 
 void
-YourMoneroRequests::get_address_info(
+OpenMoneroRequests::get_address_info(
         const shared_ptr< Session > session, const Bytes & body)
 {
     json j_response;
@@ -399,7 +399,7 @@ YourMoneroRequests::get_address_info(
 
     if (!parse_request(body, requested_values, j_request, j_response))
     {
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     }
 
@@ -414,7 +414,7 @@ YourMoneroRequests::get_address_info(
     catch (json::exception const& e)
     {
         cerr << "json exception: " << e.what() << '\n';
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     }
 
@@ -541,7 +541,7 @@ YourMoneroRequests::get_address_info(
                            {"reason", "Search thread does not exist."}};
 
         // some error with loggin in or search thread start
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     }
 
@@ -555,7 +555,7 @@ YourMoneroRequests::get_address_info(
 
 
 void
-YourMoneroRequests::get_unspent_outs(
+OpenMoneroRequests::get_unspent_outs(
         const shared_ptr< Session > session,
         const Bytes & body)
 {
@@ -567,7 +567,7 @@ YourMoneroRequests::get_unspent_outs(
 
     if (!parse_request(body, requested_values, j_request, j_response))
     {
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     }
 
@@ -594,13 +594,13 @@ YourMoneroRequests::get_unspent_outs(
     catch (json::exception const& e)
     {
         cerr << "json exception: " << e.what() << '\n';
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     }
     catch (boost::bad_lexical_cast const& e)
     {
         cerr << "Bed lexical cast" << e.what() << '\n';
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     }
 
@@ -628,7 +628,7 @@ YourMoneroRequests::get_unspent_outs(
         if (!login_and_start_search_thread(xmr_address, view_key, acc, j_response))
         {
             // some error with loggin in or search thread start
-            session_close(session, j_response.dump());
+            session_close(session, j_response);
             return;
         }
 
@@ -760,7 +760,7 @@ YourMoneroRequests::get_unspent_outs(
                            {"reason", "Search thread does not exist."}};
 
         // some error with loggin in or search thread start
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
 
     }
@@ -774,7 +774,7 @@ YourMoneroRequests::get_unspent_outs(
 }
 
 void
-YourMoneroRequests::get_random_outs(
+OpenMoneroRequests::get_random_outs(
         const shared_ptr< Session > session, const Bytes & body)
 {
     json j_request;
@@ -784,7 +784,7 @@ YourMoneroRequests::get_random_outs(
 
     if (!parse_request(body, requested_values, j_request, j_response))
     {
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     }
 
@@ -797,7 +797,7 @@ YourMoneroRequests::get_random_outs(
     catch (json::exception const& e)
     {
         cerr << "json exception: " << e.what() << '\n';
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     };
 
@@ -805,9 +805,8 @@ YourMoneroRequests::get_random_outs(
     {
         cerr << "Request ring size too big" << '\n';
         j_response["status"] = "error";
-        j_response["error"]  = fmt::format("Request ring size {:d} too large",
-                                           count);
-        session_close(session, j_response.dump());
+        j_response["error"]  = "Request ring size too large";
+        session_close(session, j_response);
     }
 
     vector<uint64_t> amounts;
@@ -827,7 +826,7 @@ YourMoneroRequests::get_random_outs(
     catch (boost::bad_lexical_cast& e)
     {
         cerr << "Bed lexical cast" << '\n';
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     }
 
@@ -874,8 +873,8 @@ YourMoneroRequests::get_random_outs(
     else
     {
         j_response["status"] = "error";
-        j_response["error"]  = fmt::format("Error getting random "
-                                           "outputs from monero deamon");
+        j_response["error"]  = "Error getting random "
+                               "outputs from monero deamon";
     }
 
     string response_body = j_response.dump();
@@ -888,7 +887,7 @@ YourMoneroRequests::get_random_outs(
 
 
 void
-YourMoneroRequests::submit_raw_tx(
+OpenMoneroRequests::submit_raw_tx(
         const shared_ptr< Session > session, const Bytes & body)
 {
     json j_request = body_to_json(body);
@@ -922,7 +921,7 @@ YourMoneroRequests::submit_raw_tx(
 
         OMERROR << j_response["Error"];
 
-        session_close(session, j_response.dump(),
+        session_close(session, j_response,
                       UNPROCESSABLE_ENTITY);
         return;
     }
@@ -936,7 +935,7 @@ YourMoneroRequests::submit_raw_tx(
 
         OMERROR << j_response["Error"];
 
-        session_close(session, j_response.dump(),
+        session_close(session, j_response,
                       UNPROCESSABLE_ENTITY);
         return;
     }
@@ -951,7 +950,7 @@ YourMoneroRequests::submit_raw_tx(
 
         OMERROR << j_response["Error"];
 
-        session_close(session, j_response.dump(),
+        session_close(session, j_response,
                       UNPROCESSABLE_ENTITY);
         return;
     }
@@ -965,7 +964,7 @@ YourMoneroRequests::submit_raw_tx(
 
         OMERROR << j_response["Error"];
 
-        session_close(session, j_response.dump(),
+        session_close(session, j_response,
                       UNPROCESSABLE_ENTITY);
         return;
     }
@@ -982,263 +981,20 @@ YourMoneroRequests::submit_raw_tx(
 }
 
 void
-YourMoneroRequests::import_wallet_request(
+OpenMoneroRequests::import_wallet_request(
         const shared_ptr< Session > session, const Bytes & body)
 {
-    json j_request = body_to_json(body);
 
-    string xmr_address   = j_request["address"];
-
-    json j_response;
-
-    j_response["request_fulfilled"] = false;
-    j_response["import_fee"]        = std::to_string(
-                                            current_bc_status->get_bc_setup()
-                                                .import_fee);
-    j_response["status"] = "error";
-    j_response["error"]  = "Some error occured";
-
-    // if current_bc_status-> is zero, we just import the wallet.
-    // we dont care about any databases or anything, as importin all
-    // wallet is free.
-    // just reset the scanned block height in mysql and finish.
-    if (current_bc_status->get_bc_setup().import_fee == 0)
-    {
-        // change search blk number in the search thread
-        if (!current_bc_status->set_new_searched_blk_no(xmr_address, 0))
-        {
-            cerr << "Updating searched_blk_no failed!" << endl;
-            j_response["error"] = "Updating searched_blk_no failed!";
-        }
-
-        j_response["request_fulfilled"] = true;
-        j_response["status"]            = "Import will start shortly";
-        j_response["new_request"]       = true;
-        j_response["error"]             = "";
-
-        string response_body = j_response.dump();
-
-        auto response_headers
-                = make_headers({{ "Content-Length",
-                                         std::to_string(response_body.size())}});
-
-        session->close( OK, response_body, response_headers);
-
-        return;
-    }
-
-    XmrAccount acc;
-
-    if (!xmr_accounts->select(xmr_address, acc))
-    {
-        cerr << "xmr_address does not exists! " << endl;
-        j_response["error"] = "The account does not exists!";
-
-        string response_body = j_response.dump();
-        auto response_headers
-                = make_headers({{ "Content-Length",
-                                     std::to_string(response_body.size())}});
-
-        session->close( OK, response_body, response_headers);
-        return;
-    }
-
-
-    // a placeholder for existing or new payment data
-    vector<XmrPayment> xmr_payments;
-
-
-    // select this payment if its existing one
-    if (xmr_accounts->select(acc.id.data, xmr_payments))
-    {
-        // payment record exists, so now we need to check if
-        // actually payment has been done, and updated
-        // mysql record accordingly.
-
-        if (xmr_payments.size() > 1)
-        {
-            cerr << "More than one payment record found! " << endl;
-            j_response["error"] = "TMore than one payment record found!";
-
-            string response_body = j_response.dump();
-            auto response_headers
-                    = make_headers({{ "Content-Length",
-                                      to_string(response_body.size())}});
-
-            session->close( OK, response_body, response_headers);
-            return;
-        }
-
-        XmrPayment& xmr_payment = xmr_payments[0];
-
-        bool request_fulfilled = bool {xmr_payment.request_fulfilled};
-
-        string integrated_address =
-                current_bc_status->get_account_integrated_address_as_str(
-                        xmr_payment.payment_id);
-
-        j_response["payment_id"]        = xmr_payment.payment_id;
-        j_response["import_fee"]        = std::to_string(xmr_payment.import_fee);
-        j_response["new_request"]       = false;
-        j_response["request_fulfilled"] = request_fulfilled;
-        j_response["payment_address"]   = integrated_address;
-        j_response["status"]            = "Payment not yet received";
-
-        string tx_hash_with_payment;
-
-        // if payment has not yet been done
-        if (!request_fulfilled)
-        {
-            // check if it has just been done now
-            // if yes, mark it in mysql
-            if(current_bc_status->search_if_payment_made(
-                    xmr_payment.payment_id,
-                    xmr_payment.import_fee,
-                    tx_hash_with_payment))
-            {
-                XmrPayment updated_xmr_payment = xmr_payment;
-
-                // updated values
-                updated_xmr_payment.request_fulfilled = true;
-                updated_xmr_payment.tx_hash           = tx_hash_with_payment;
-
-                // save to mysql
-                if (xmr_accounts->update(xmr_payment, updated_xmr_payment))
-                {
-
-                    // set scanned_block_height	to 0 to begin
-                    // scanning entire blockchain
-
-                    XmrAccount acc;
-
-                    if (xmr_accounts->select(xmr_address, acc))
-                    {
-                        XmrAccount updated_acc = acc;
-
-                        updated_acc.scanned_block_height = 0;
-
-                        if (xmr_accounts->update(acc, updated_acc))
-                        {
-                            // if success, set acc to updated_acc;
-                            request_fulfilled = true;
-
-                            // change search blk number in the search thread
-                            if (!current_bc_status
-                                    ->set_new_searched_blk_no(xmr_address, 0))
-                            {
-                                cerr << "Updating searched_blk_no failed!\n";
-                                j_response["error"] = "Updating searched_blk_no"
-                                                      " failed!";
-                            }
-
-                            j_response["request_fulfilled"]
-                                    = request_fulfilled;
-                            j_response["status"]
-                                    = "Payment received. Thank you.";
-                            j_response["new_request"]       = true;
-                            j_response["error"]             = "";
-                        }
-                    }
-                    else
-                    {
-                        cerr << "Updating accounts due to made "
-                                "payment mysql failed! \n";
-                        j_response["error"]
-                                = "Updating accounts due to made "
-                                  "payment mysql failed!";
-                    }
-                }
-                else
-                {
-                    cerr << "Updating payment mysql failed!\n";
-                    j_response["error"] = "Updating payment mysql failed!";
-                }
-
-            } // if(current_bc_status->search_if_payment_made(
-
-        }  // if (!request_fulfilled)
-        else
-        {
-            // if payment has been made, and we get new request to import txs
-            // indicate that this is new requeest, but request was fulfiled.
-            // front end should give proper message in this case
-
-            j_response["request_fulfilled"] = request_fulfilled;
-            j_response["status"]            = "Wallet already imported or "
-                                              "in the progress.";
-            j_response["new_request"]       = false;
-            j_response["error"]             = "";
-        }
-
-    } //  if (xmr_accounts->select_payment_by_address(xmr_address, xmr_payment))
-    else
-    {
-        // payment request is new, so create its entry in
-        // Payments table
-
-        uint64_t payment_table_id {0};
-
-        crypto::hash8 random_payment_id8 = crypto::rand<crypto::hash8>();
-
-        string integrated_address =
-                current_bc_status->get_account_integrated_address_as_str(
-                        random_payment_id8);
-
-        XmrPayment xmr_payment;
-
-        xmr_payment.id                = mysqlpp::null;
-        xmr_payment.account_id        = acc.id.data;
-        xmr_payment.payment_id        = pod_to_hex(random_payment_id8);
-        xmr_payment.import_fee        = current_bc_status
-                                            ->get_bc_setup().import_fee; // xmr
-        xmr_payment.request_fulfilled = false;
-        xmr_payment.tx_hash           = ""; // no tx_hash yet with the payment
-        xmr_payment.payment_address   = integrated_address;
-
-        if ((payment_table_id = xmr_accounts->insert(xmr_payment)) != 0)
-        {
-            // payment entry created
-
-            j_response["payment_id"]        = payment_table_id;
-            j_response["import_fee"]        = std::to_string(
-                                                xmr_payment.import_fee);
-            j_response["new_request"]       = true;
-            j_response["request_fulfilled"]
-                                         = bool {xmr_payment.request_fulfilled};
-            j_response["payment_address"]   = xmr_payment.payment_address;
-            j_response["status"]            = "Payment not yet received";
-            j_response["error"]             = "";
-        }
-    }
-
-    string response_body = j_response.dump();
-
-    auto response_headers = make_headers({{ "Content-Length",
-                                            std::to_string(response_body.size())}});
-
-    session->close( OK, response_body, response_headers);
-}
-
-
-
-void
-YourMoneroRequests::import_recent_wallet_request(
-        const shared_ptr< Session > session, const Bytes & body)
-{
     json j_response;
     json j_request;
 
-    bool request_fulfilled {false};
+    vector<string> requested_values {"address" , "view_key"};
 
-    j_response["request_fulfilled"] = false;
-
-    vector<string> requested_values {"address" , "view_key",
-                                     "no_blocks_to_import"};
-
-    if (!parse_request(body, requested_values, j_request, j_response))
+    if (!parse_request(body, requested_values,
+                       j_request, j_response))
     {
-        j_response["Error"] = "Cant parse json body";
-        session_close(session, j_response.dump());
+        session_close(session, j_response, UNPROCESSABLE_ENTITY,
+                      "Cant parse json body!");
         return;
     }
 
@@ -1252,8 +1008,272 @@ YourMoneroRequests::import_recent_wallet_request(
     }
     catch (json::exception const& e)
     {
-        cerr << "json exception: " << e.what() << '\n';
-        session_close(session, j_response.dump());
+        OMERROR << "json exception: " << e.what();
+        session_close(session, j_response, UNPROCESSABLE_ENTITY,
+                      e.what());
+        return;
+    }
+
+
+    j_response["request_fulfilled"] = false;
+    j_response["import_fee"]        = std::to_string(
+                                            current_bc_status->get_bc_setup()
+                                                .import_fee);
+    j_response["status"] = "error";
+    j_response["error"]  = "Some error occured";
+
+    // get account from mysql db if exists
+    auto xmr_account = select_account(xmr_address);
+
+    if (!xmr_account)
+    {
+        session_close(session, j_response, UNPROCESSABLE_ENTITY,
+                      "The account does not exists!");
+        return;
+    }
+
+    // if import_fee is zero, we just import the wallet.
+    // we dont care about any databases or anything, as importing
+    // wallet is free.
+    // just reset the scanned block height in mysql and finish.
+    if (current_bc_status->get_bc_setup().import_fee == 0)
+    {
+        // change search blk number in the search thread
+        if (!current_bc_status->set_new_searched_blk_no(xmr_address, 0))
+        {
+            session_close(session, j_response, UNPROCESSABLE_ENTITY,
+                          "Updating searched_blk_no failed!");
+            return;
+        }
+
+        j_response["request_fulfilled"] = true;
+        j_response["status"]            = "Import will start shortly";
+        j_response["new_request"]       = true;
+        j_response["error"]             = "";
+
+        session_close(session, j_response);
+
+        return;
+    }
+
+    // payment fee is not zero, so we need to
+    // ask for the payment. So we first get payment details
+    // associated with the given account.
+
+    auto xmr_payment = select_payment(*xmr_account);
+
+    // something went wrong.
+    if (!xmr_payment)
+    {
+        session_close(session, j_response, UNPROCESSABLE_ENTITY,
+                      "Selecting payment details failed!");
+        return;
+    }
+
+    // payment id is null
+    if (xmr_payment->id == mysqlpp::null)
+    {
+        // no current payment record exist,
+        // so we have to create new one.
+
+        // payment request is new, so create its entry in
+        // Payments table
+
+        uint64_t payment_table_id {0};
+
+        crypto::hash8 random_payment_id8 = crypto::rand<crypto::hash8>();
+
+        string integrated_address =
+                current_bc_status->get_account_integrated_address_as_str(
+                        random_payment_id8);
+
+        xmr_payment->account_id        = xmr_account->id.data;
+        xmr_payment->payment_id        = pod_to_hex(random_payment_id8);
+        xmr_payment->import_fee        = current_bc_status
+                                            ->get_bc_setup().import_fee; // xmr
+        xmr_payment->request_fulfilled = false;
+        xmr_payment->tx_hash           = ""; // no tx_hash yet with the payment
+        xmr_payment->payment_address   = integrated_address;
+
+        if ((payment_table_id = xmr_accounts->insert(*xmr_payment)) == 0)
+        {
+            OMERROR << xmr_address.substr(0, 6)
+                       + ": failed to create new payment record!";
+
+            session_close(session, j_response, UNPROCESSABLE_ENTITY,
+                          "Failed to create new payment record!");
+            return;
+        }
+
+        // payment entry created
+
+        j_response["payment_id"]        = payment_table_id;
+        j_response["import_fee"]        = std::to_string(
+                                            xmr_payment->import_fee);
+        j_response["new_request"]       = true;
+        j_response["request_fulfilled"]
+                                        = bool {xmr_payment->request_fulfilled};
+        j_response["payment_address"]   = xmr_payment->payment_address;
+        j_response["status"]            = "Payment not yet received";
+        j_response["error"]             = "";
+
+        session_close(session, j_response);
+        return;
+    } // if (xmr_payment->id == mysqlpp::null)
+
+    // payment id is not null, so it means that
+    // we have already payment record in our db for that
+    // account.
+
+    bool request_fulfilled = bool {xmr_payment->request_fulfilled};
+
+    if (request_fulfilled)
+    {
+        // if payment has been made, and we get new request to import txs
+        // indicate that this is new requeest, but request was fulfiled.
+        // front end should give proper message in this case
+
+        j_response["request_fulfilled"] = request_fulfilled;
+        j_response["status"]            = "Wallet already imported or "
+                                          "in the progress.";
+        j_response["new_request"]       = false;
+        j_response["error"]             = "";
+
+        session_close(session, j_response);
+        return;
+    }
+
+    // payment has not been yet done, so we are going
+    // to check if it has just been done and update
+    // db accordingly
+
+    string integrated_address =
+            current_bc_status->get_account_integrated_address_as_str(
+                    xmr_payment->payment_id);
+
+    if (integrated_address.empty())
+    {
+        session_close(session, j_response, UNPROCESSABLE_ENTITY,
+                      "get_account_integrated_address_as_str failed!");
+        return;
+    }
+
+    j_response["payment_id"]        = xmr_payment->payment_id;
+    j_response["import_fee"]        = std::to_string(xmr_payment->import_fee);
+    j_response["new_request"]       = false;
+    j_response["request_fulfilled"] = request_fulfilled;
+    j_response["payment_address"]   = integrated_address;
+    j_response["status"]            = "Payment not yet received";
+
+    string tx_hash_with_payment;
+
+    // if payment has not yet been done
+    // check if it has just been done now
+    // if yes, mark it in mysql
+
+    if(current_bc_status->search_if_payment_made(
+            xmr_payment->payment_id,
+            xmr_payment->import_fee,
+            tx_hash_with_payment))
+    {
+        XmrPayment updated_xmr_payment = *xmr_payment;
+
+        // updated values
+        updated_xmr_payment.request_fulfilled = true;
+        updated_xmr_payment.tx_hash           = tx_hash_with_payment;
+
+        // save to mysql
+        if (!xmr_accounts->update(*xmr_payment, updated_xmr_payment))
+        {
+
+            OMERROR << xmr_address.substr(0,6) +
+                        "Updating payment db failed!\n";
+
+            session_close(session, j_response, UNPROCESSABLE_ENTITY,
+                          "Updating payment db failed!");
+            return;
+        }
+
+        XmrAccount updated_acc = *xmr_account;
+
+        updated_acc.scanned_block_height = 0;
+
+        // set scanned_block_height	to 0 to begin
+        // scanning entire blockchain
+
+        if (!xmr_accounts->update(*xmr_account, updated_acc))
+        {
+            OMERROR << xmr_address.substr(0,6) +
+                        "Updating scanned_block_height failed!\n";
+
+            session_close(session, j_response, UNPROCESSABLE_ENTITY,
+                          "Updating scanned_block_height failed!");
+            return;
+        }
+
+        // if success, set acc to updated_acc;
+        request_fulfilled = true;
+
+        // change search blk number in the search thread
+        if (!current_bc_status
+                ->set_new_searched_blk_no(xmr_address, 0))
+        {
+            session_close(session, j_response, UNPROCESSABLE_ENTITY,
+                          "updating searched_blk_no failed!");
+            return;
+
+        }
+
+        j_response["request_fulfilled"]
+                = request_fulfilled;
+        j_response["status"]
+                = "Payment received. Thank you.";
+        j_response["new_request"]       = true;
+        j_response["error"]             = "";
+
+    } // if(current_bc_status->search_if_payment_made(
+
+
+    session_close(session, j_response);
+}
+
+
+
+void
+OpenMoneroRequests::import_recent_wallet_request(
+        const shared_ptr< Session > session, const Bytes & body)
+{
+    json j_response;
+    json j_request;
+
+    bool request_fulfilled {false};
+
+    j_response["request_fulfilled"] = false;
+
+    vector<string> requested_values {"address" , "view_key",
+                                     "no_blocks_to_import"};
+
+    if (!parse_request(body, requested_values,
+                       j_request, j_response))
+    {
+        session_close(session, j_response, UNPROCESSABLE_ENTITY,
+                      "Cant parse json body!");
+        return;
+    }
+
+    string xmr_address;
+    string view_key;
+
+    try
+    {
+        xmr_address = j_request["address"];
+        view_key    = j_request["view_key"];
+    }
+    catch (json::exception const& e)
+    {
+        OMERROR << "json exception: " << e.what();
+        session_close(session, j_response, UNPROCESSABLE_ENTITY,
+                      e.what());
         return;
     }
 
@@ -1274,7 +1294,7 @@ YourMoneroRequests::import_recent_wallet_request(
         cerr << msg << '\n';
 
         j_response["Error"] = msg;
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     }
 
@@ -1352,7 +1372,7 @@ YourMoneroRequests::import_recent_wallet_request(
 
 
 void
-YourMoneroRequests::get_tx(
+OpenMoneroRequests::get_tx(
         const shared_ptr< Session > session, const Bytes & body)
 {
     json j_response;
@@ -1362,7 +1382,7 @@ YourMoneroRequests::get_tx(
 
     if (!parse_request(body, requested_values, j_request, j_response))
     {
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     }
 
@@ -1379,7 +1399,7 @@ YourMoneroRequests::get_tx(
     catch (json::exception const& e)
     {
         cerr << "json exception: " << e.what() << '\n';
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     }
 
@@ -1393,7 +1413,7 @@ YourMoneroRequests::get_tx(
     {
         cerr << "Cant parse tx hash! : " << tx_hash_str  << '\n';
         j_response["status"] = "Cant parse tx hash! : " + tx_hash_str;
-        session_close(session, j_response.dump());
+        session_close(session, j_response);
         return;
     }
 
@@ -1717,7 +1737,7 @@ YourMoneroRequests::get_tx(
 
 
 void
-YourMoneroRequests::get_version(
+OpenMoneroRequests::get_version(
         const shared_ptr< Session > session,
         const Bytes & body)
 {
@@ -1746,8 +1766,8 @@ YourMoneroRequests::get_version(
 
 
 shared_ptr<Resource>
-YourMoneroRequests::make_resource(
-        function< void (YourMoneroRequests&, const shared_ptr< Session >,
+OpenMoneroRequests::make_resource(
+        function< void (OpenMoneroRequests&, const shared_ptr< Session >,
                         const Bytes& ) > handle_func,
         const string& path)
 {
@@ -1766,7 +1786,7 @@ YourMoneroRequests::make_resource(
 
 
 void
-YourMoneroRequests::generic_options_handler(
+OpenMoneroRequests::generic_options_handler(
         const shared_ptr< Session > session )
 {
     const auto request = session->get_request( );
@@ -1775,7 +1795,7 @@ YourMoneroRequests::generic_options_handler(
 
     session->fetch(content_length,
                    [](const shared_ptr< Session > session,
-                   const Bytes & body)
+                   const Bytes &)
     {
         session->close( OK, string{}, make_headers());
     });
@@ -1783,7 +1803,7 @@ YourMoneroRequests::generic_options_handler(
 
 
 multimap<string, string>
-YourMoneroRequests::make_headers(
+OpenMoneroRequests::make_headers(
         const multimap<string, string>& extra_headers)
 {
     multimap<string, string> headers {
@@ -1798,20 +1818,20 @@ YourMoneroRequests::make_headers(
 };
 
 void
-YourMoneroRequests::print_json_log(const string& text, const json& j)
+OpenMoneroRequests::print_json_log(const string& text, const json& j)
 {
     cout << text << '\n' << j.dump(4) << endl;
 }
 
 
 string
-YourMoneroRequests::body_to_string(const Bytes & body)
+OpenMoneroRequests::body_to_string(const Bytes & body)
 {
     return string(reinterpret_cast<const char *>(body.data()), body.size());
 }
 
 json
-YourMoneroRequests::body_to_json(const Bytes & body)
+OpenMoneroRequests::body_to_json(const Bytes & body)
 {
     json j = json::parse(body_to_string(body));
     return j;
@@ -1819,13 +1839,13 @@ YourMoneroRequests::body_to_json(const Bytes & body)
 
 
 uint64_t
-YourMoneroRequests::get_current_blockchain_height()
+OpenMoneroRequests::get_current_blockchain_height()
 {
     return current_bc_status->get_current_blockchain_height();
 }
 
 bool
-YourMoneroRequests::login_and_start_search_thread(
+OpenMoneroRequests::login_and_start_search_thread(
                         const string& xmr_address,
                         const string& view_key,
                         XmrAccount& acc,
@@ -1924,21 +1944,8 @@ YourMoneroRequests::login_and_start_search_thread(
 }
 
 
-
-void
-YourMoneroRequests::session_close(
-        const shared_ptr< Session > session,
-        string response_body,
-        int return_code)
-{
-    auto response_headers = make_headers({{"Content-Length",
-                                           to_string(response_body.size())}});
-    session->close(return_code, response_body, response_headers);
-}
-
-
 bool
-YourMoneroRequests::parse_request(
+OpenMoneroRequests::parse_request(
         const Bytes& body,
         vector<string>& values_map,
         json& j_request,
@@ -1971,13 +1978,99 @@ YourMoneroRequests::parse_request(
     }
     catch (std::exception& e)
     {
-        cerr << "YourMoneroRequests::parse_request: " << e.what() << endl;
+        cerr << "OpenMoneroRequests::parse_request: " << e.what() << endl;
 
         j_response["status"] = "error";
         j_response["reason"] = "reqest json parsing failed";
 
         return false;
     }
+}
+
+boost::optional<XmrAccount>
+OpenMoneroRequests::select_account(
+        string const& xmr_address) const
+{
+    boost::optional<XmrAccount> acc = XmrAccount{};
+
+    if (!xmr_accounts->select(xmr_address, *acc))
+    {
+        OMERROR << xmr_address.substr(0,6) +
+                   ": address does not exists!";
+
+        return acc;
+    }
+
+    return acc;
+}
+
+boost::optional<XmrPayment>
+OpenMoneroRequests::select_payment(
+        XmrAccount const& xmr_account) const
+{
+     vector<XmrPayment> xmr_payments;
+
+     if (!xmr_accounts->select(xmr_account.id.data,
+                               xmr_payments))
+     {
+         OMINFO << xmr_account.address.substr(0,6) +
+                    ": no payment record found!";
+
+         // so create empty record to be inserted into
+         // db after.
+         XmrPayment xmr_payment;
+         xmr_payment.id = mysqlpp::null;
+
+         return xmr_payment;
+     }
+
+     if (xmr_payments.size() > 1)
+     {
+         OMERROR << xmr_account.address.substr(0,6) +
+                    ": more than one payment record found!";
+         return {};
+     }
+
+     // if xmr_payments is empty it means
+     // that the given account has no import
+     // paymnet record created. so new
+     // paymnet will be created
+     if (xmr_payments.empty())
+     {                  
+         OMINFO << xmr_account.address.substr(0,6) +
+                    ": no payment record found!";
+
+         // so create empty record to be inserted into
+         // db after.
+         XmrPayment xmr_payment;
+         xmr_payment.id = mysqlpp::null;
+
+         return xmr_payment;
+     }
+
+     return xmr_payments.at(0);
+}
+
+void
+OpenMoneroRequests::session_close(
+        const shared_ptr< Session > session,
+        json& j_response,
+        int return_code,
+        string error_msg) const
+{
+    if (return_code != OK)
+    {
+        j_response["Error"] = error_msg;
+    }
+
+    string response_body = j_response.dump();
+
+    auto response_headers
+            = make_headers({{ "Content-Length",
+                              std::to_string(response_body.size())}});
+
+    session->close( return_code,
+                    response_body, response_headers);
 }
 
 }

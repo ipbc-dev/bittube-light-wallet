@@ -2,6 +2,9 @@
 // Created by mwo on 13/04/16.
 //
 
+#include "easylogging++.h"
+#include "om_log.h"
+
 #include "RPCCalls.h"
 
 namespace xmreg
@@ -52,41 +55,23 @@ RPCCalls::commit_tx(
                 m_http_client, rpc_timeout);
     }
 
-    if (!r)
-    {
-        error_msg = res.reason;
+    if (!r || !check_if_response_is_ok(res, error_msg))
+    {        
+        if (res.reason.empty())
+            error_msg += "Reason not given by daemon.";
+        else
+            error_msg += res.reason;
 
-        if (error_msg.empty())
-        {
-            error_msg = "Reason not given by daemon.";
-        }
-
-        cerr << "Error sending tx: " << error_msg << endl;
-
-        return false;
-    }
-
-    if (res.status == CORE_RPC_STATUS_BUSY)
-    {
-        error_msg = "Deamon is BUSY. Cant sent now " + res.reason;
-
-        cerr << "Error sending tx: " << error_msg << endl;
-
-        return false;
-    }
-
-    if (res.status != CORE_RPC_STATUS_OK)
-    {
-        error_msg = "Tx rejected: " + res.reason;
-
-        cerr << "Error sending tx: " << error_msg << endl;
+        OMERROR << "Error sending tx. " << error_msg;
 
         return false;
     }
 
     if (do_not_relay)
     {
-        cout << "Tx accepted by deamon but not relayed (useful for testing of constructing txs)" << endl;
+        OMINFO << "Tx accepted by deamon but "
+                  "not relayed (useful for testing "
+                  "of constructing txs)";
     }
 
     return true;
@@ -122,10 +107,12 @@ RPCCalls::get_current_height(uint64_t& current_height)
                 req, res, m_http_client, rpc_timeout);
     }
 
-    if (!r)
+    string error_msg;
+
+    if (!r || !check_if_response_is_ok(res, error_msg))
     {
-        cerr << "Error connecting to Monero deamon at "
-             << deamon_url << endl;
+        OMERROR << "Error getting blockchain height. "
+                << error_msg;
         return false;
     }
 
@@ -134,4 +121,38 @@ RPCCalls::get_current_height(uint64_t& current_height)
     return true;
 }
 
+
+template <typename Command>
+bool
+RPCCalls::check_if_response_is_ok(
+        Command const& res,
+        string& error_msg) const
+{
+    if (res.status == CORE_RPC_STATUS_BUSY)
+    {
+        error_msg = "Deamon is BUSY. Cant sent now. ";
+        return false;
+    }
+
+    if (res.status != CORE_RPC_STATUS_OK)
+    {
+        error_msg = "RPC failed. ";
+        return false;
+    }
+
+    return true;
+}
+
+
+template
+bool RPCCalls::check_if_response_is_ok<
+        COMMAND_RPC_SEND_RAW_TX::response>(
+    COMMAND_RPC_SEND_RAW_TX::response const& res,
+    string& error_msg) const;
+
+template
+bool RPCCalls::check_if_response_is_ok<
+        COMMAND_RPC_GET_HEIGHT::response>(
+    COMMAND_RPC_GET_HEIGHT::response const& res,
+    string& error_msg) const;
 }
