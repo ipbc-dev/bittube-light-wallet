@@ -306,7 +306,7 @@ protected:
     // map that will keep track of search threads. In the
     // map, key is address to which a running thread belongs to.
     // make it static to guarantee only one such map exist.
-    map<string, ThreadRAII2<TxSearch>> searching_threads;
+    map<string, std::unique_ptr<ThreadRAII2<TxSearch>>> searching_threads;
 
     // thread that will be dispachaed and will keep monitoring blockchain
     // and mempool changes

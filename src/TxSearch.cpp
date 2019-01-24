@@ -12,8 +12,17 @@
 
 #include "CurrentBlockchainStatus.h"
 
+#include "ThreadRAII.h"
+
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 namespace xmreg
 {
+
+boost::asio::io_service& getIOService() {
+    static boost::asio::io_service gIOService;
+    return gIOService;
+}
 
 TxSearch::TxSearch(XmrAccount& _acc,
                    std::shared_ptr<CurrentBlockchainStatus> _current_bc_status)
@@ -50,6 +59,8 @@ TxSearch::TxSearch(XmrAccount& _acc,
 
     address_prefix = acc->address.substr(0, 6);
 
+    searching_is_ongoing = true;
+
     ping();
 }
 
@@ -59,7 +70,15 @@ TxSearch::operator()()
 
     seconds current_timestamp = get_current_timestamp();
 
-    last_ping_timestamp = current_timestamp;
+    if (current_timestamp - last_ping_timestamp > thread_search_life)
+    {
+        OMINFO << address_prefix + ": search thread stopped.";
+        stop();
+        searching_is_ongoing = false;
+        return;
+    }
+
+    // last_ping_timestamp = current_timestamp;
 
     uint64_t blocks_lookahead
             = current_bc_status->get_bc_setup().blocks_search_lookahead;
@@ -76,7 +95,7 @@ TxSearch::operator()()
     // here.
     try
     {
-        while(continue_search)
+        // while(continue_search)
         {            
 
             seconds loop_timestamp {current_timestamp};
@@ -97,6 +116,8 @@ TxSearch::operator()()
                             << ": cant get blocks from " << h1
                             << " to " << h2;
                     stop();
+                    searching_is_ongoing = false;
+                    return;
                 }
                 else
                 {
@@ -105,6 +126,7 @@ TxSearch::operator()()
                               "Last scanned was " << h2;
                 }
 
+                /*
                 std::this_thread::sleep_for(
                         std::chrono::seconds(
                                 current_bc_status->get_bc_setup()
@@ -134,6 +156,15 @@ TxSearch::operator()()
                 // update database accordingly when get_address_txs is executed.
 
                 continue;
+                */
+                boost::asio::deadline_timer t(
+                    getIOService(),
+                    boost::posix_time::seconds(current_bc_status->get_bc_setup().refresh_block_status_every.count())
+                );
+                t.async_wait([this](const boost::system::error_code& e) {
+                    getTxSearchPool().push([this](int thread_idx) { (*this)(); });
+                });
+                return;
             }
 
             OMINFO << address_prefix  + ": analyzing "
@@ -153,6 +184,7 @@ TxSearch::operator()()
                 OMERROR << address_prefix
                            + ": cant get tx in blocks from "
                         << h1 << " to " << h2;
+                searching_is_ongoing = false;
                 return;
             }
 
@@ -598,7 +630,10 @@ TxSearch::operator()()
             searched_blk_no = h2 + 1;
 
         } // while(continue_search)
-
+        if (continue_search) {
+            getTxSearchPool().push([this](int thread_idx) { (*this)(); });
+            return;
+        }
     }   
     catch(...)
     {
@@ -611,8 +646,6 @@ TxSearch::operator()()
 
     // it will stop anyway, but just call it so we get info message pritened out
     stop();
-
-
 }
 
 void
