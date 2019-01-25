@@ -7,6 +7,8 @@
 
 #include <thread>
 
+#include "ctpl.h"
+
 namespace xmreg
 {
 
@@ -28,6 +30,27 @@ public:
 private:
     std::thread t;
     DtorAction action;
+};
+
+ctpl::thread_pool& getTxSearchPool();
+
+template <typename T>
+class ThreadRAII2 {
+public:
+    ThreadRAII2(std::unique_ptr<T> _functor) : f{std::move(_functor)}
+    {
+	    getTxSearchPool().push([this](int thread_idx) {
+			this->get_functor().search();
+	    });
+    };
+
+    ThreadRAII2(ThreadRAII2&&) = default;
+    ThreadRAII2& operator=(ThreadRAII2&&) = default;
+
+    T& get_functor() { return *f; }
+
+protected:
+    std::unique_ptr<T> f;
 };
 
 }

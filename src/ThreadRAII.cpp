@@ -22,4 +22,9 @@ ThreadRAII::~ThreadRAII()
     }
 }
 
+ctpl::thread_pool& getTxSearchPool() {
+	static ctpl::thread_pool gTxSearchPool(10);
+	return gTxSearchPool;
+}
+
 }

@@ -12,8 +12,17 @@
 
 #include "CurrentBlockchainStatus.h"
 
+#include "ThreadRAII.h"
+
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 namespace xmreg
 {
+
+boost::asio::io_service& getIOService() {
+    static boost::asio::io_service gIOService;
+    return gIOService;
+}
 
 TxSearch::TxSearch(XmrAccount& _acc, std::shared_ptr<CurrentBlockchainStatus> _current_bc_status)
     : current_bc_status {_current_bc_status}
@@ -54,7 +63,14 @@ TxSearch::search()
 
     uint64_t current_timestamp = get_current_timestamp();
 
-    last_ping_timestamp = current_timestamp;
+    if (current_timestamp - last_ping_timestamp > thread_search_life)
+    {
+        cout << "Search thread stopped for address "<< acc->address <<'\n';
+        stop();
+        return;
+    }
+
+    // last_ping_timestamp = current_timestamp;
 
     uint64_t blocks_lookahead = current_bc_status->get_bc_setup().blocks_search_lookahead;
 
@@ -65,7 +81,7 @@ TxSearch::search()
     // here.
     try
     {
-        while(continue_search)
+        // while(continue_search)
         {
             uint64_t loop_timestamp {current_timestamp};
 
@@ -80,6 +96,7 @@ TxSearch::search()
             {
                 cout << "Cant get blocks from " << h1 << " to " << h2 << '\n';
 
+                /*
                 std::this_thread::sleep_for(
                         std::chrono::seconds(
                                 current_bc_status->get_bc_setup().refresh_block_status_every_seconds)
@@ -105,6 +122,15 @@ TxSearch::search()
                 // update database accordingly when get_address_txs is executed.
 
                 continue;
+                */
+                boost::asio::deadline_timer t(
+                    getIOService(),
+                    boost::posix_time::seconds(current_bc_status->get_bc_setup().refresh_block_status_every_seconds)
+                );
+                t.async_wait([this](const boost::system::error_code& e) {
+                    getTxSearchPool().push([this](int thread_idx) { this->search(); });
+                });
+                return;
             }
 
             cout << "Analyzing " << blocks.size() << " blocks from " << h1 << " to " << h2
@@ -115,6 +141,7 @@ TxSearch::search()
             if (!current_bc_status->get_txs_in_blocks(blocks, txs_data))
             {
                 cout << "Cant get tx in blocks from " << h1 << " to " << h2 << '\n';
+                stop();
                 return;
             }
 
@@ -493,7 +520,10 @@ TxSearch::search()
             searched_blk_no = h2 + 1;
 
         } // while(continue_search)
-
+        if (continue_search) {
+            getTxSearchPool().push([this](int thread_idx) { this->search(); });
+            return;
+        }
     }
     catch(TxSearchException const& e)
     {

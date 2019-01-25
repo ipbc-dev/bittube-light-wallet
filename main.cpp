@@ -3,6 +3,7 @@
 #include "src/YourMoneroRequests.h"
 #include "src/ThreadRAII.h"
 #include "src/MysqlPing.h"
+#include "src/TxSearch.h"
 
 #include <iostream>
 #include <memory>
@@ -226,6 +227,17 @@ xmreg::MysqlPing mysql_ping {mysql_accounts->get_connection()};
 xmreg::ThreadRAII mysql_ping_thread(
         std::thread(std::ref(mysql_ping)),
         xmreg::ThreadRAII::DtorAction::detach);
+
+bool stop_io_service = false;
+std::thread io_service_thread([&stop_io_service, &current_bc_status]() {
+    while (!stop_io_service) {
+        xmreg::getIOService().run();
+        xmreg::getIOService().reset();
+        std::this_thread::sleep_for(std::chrono::seconds(current_bc_status->get_bc_setup().refresh_block_status_every_seconds));
+    }
+});
+
+xmreg::getTxSearchPool();
 
 // create REST JSON API services
 xmreg::YourMoneroRequests open_bittube(mysql_accounts, current_bc_status);
