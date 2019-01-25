@@ -182,7 +182,7 @@ OpenMoneroRequests::get_address_txs(
     catch (json::exception const& e)
     {
         OMERROR << "json exception: " << e.what();
-        session_close(session, j_response, UNPROCESSABLE_ENTITY);
+        session_close(session, j_response, UNPROCESSABLE_ENTITY, e.what());
         return;
     }
 
@@ -922,7 +922,7 @@ OpenMoneroRequests::submit_raw_tx(
         OMERROR << j_response["Error"];
 
         session_close(session, j_response,
-                      UNPROCESSABLE_ENTITY);
+                      UNPROCESSABLE_ENTITY, j_response["Error"]);
         return;
     }
 
@@ -936,7 +936,7 @@ OpenMoneroRequests::submit_raw_tx(
         OMERROR << j_response["Error"];
 
         session_close(session, j_response,
-                      UNPROCESSABLE_ENTITY);
+                      UNPROCESSABLE_ENTITY, j_response["Error"]);
         return;
     }
 
@@ -951,7 +951,7 @@ OpenMoneroRequests::submit_raw_tx(
         OMERROR << j_response["Error"];
 
         session_close(session, j_response,
-                      UNPROCESSABLE_ENTITY);
+                      UNPROCESSABLE_ENTITY, j_response["Error"]);
         return;
     }
 
@@ -965,7 +965,7 @@ OpenMoneroRequests::submit_raw_tx(
         OMERROR << j_response["Error"];
 
         session_close(session, j_response,
-                      UNPROCESSABLE_ENTITY);
+                      UNPROCESSABLE_ENTITY, j_response["Error"]);
         return;
     }
 
