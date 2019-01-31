@@ -1,9 +1,10 @@
+#include "src/om_log.h"
 #include "src/CmdLineOptions.h"
 #include "src/MicroCore.h"
-#include "src/YourMoneroRequests.h"
+#include "src/OpenMoneroRequests.h"
 #include "src/ThreadRAII.h"
-#include "src/MysqlPing.h"
 #include "src/TxSearch.h"
+#include "src/db/MysqlPing.h"
 
 #include <iostream>
 #include <memory>
@@ -15,6 +16,33 @@ using namespace restbed;
 
 using boost::filesystem::path;
 
+// signal exit handler, addpated from aleth
+class ExitHandler
+{
+public:
+    static std::mutex m;
+    static std::condition_variable cv;
+
+    static void exitHandler(int)
+    {
+        std::lock_guard<std::mutex> lk(m);
+        s_shouldExit = true;
+        OMINFO << "Request to finish the openmonero received";
+        cv.notify_one();
+    }
+
+    bool shouldExit() const { return s_shouldExit; }
+
+private:
+    static bool s_shouldExit;
+};
+
+bool ExitHandler::s_shouldExit {false};
+std::mutex ExitHandler::m;
+std::condition_variable ExitHandler::cv;
+
+
+
 int
 main(int ac, const char* av[])
 {
@@ -22,13 +50,53 @@ main(int ac, const char* av[])
 // get command line options
 xmreg::CmdLineOptions opts {ac, av};
 
-auto help_opt         = opts.get_option<bool>("help");
+auto help_opt = opts.get_option<bool>("help");
 
 // if help was chosen, display help text and finish
 if (*help_opt)
 {
     return EXIT_SUCCESS;
 }
+
+auto monero_log_level  =
+        *(opts.get_option<size_t>("monero-log-level"));
+
+if (monero_log_level < 1 || monero_log_level > 4)
+{
+    cerr << "monero-log-level,m option must be between 1 and 4!\n";
+    return EXIT_SUCCESS;
+}
+
+// setup monero logger
+mlog_configure(mlog_get_default_log_path(""), true);
+mlog_set_log(std::to_string(monero_log_level).c_str());
+
+auto log_file  = *(opts.get_option<string>("log-file"));
+
+// setup a logger for Open Monero
+
+el::Configurations defaultConf;
+
+defaultConf.setToDefault();
+
+if (!log_file.empty())
+{
+    // setup openmonero log file
+    defaultConf.setGlobally(el::ConfigurationType::Filename, log_file);
+    defaultConf.setGlobally(el::ConfigurationType::ToFile, "true");
+}
+
+defaultConf.setGlobally(el::ConfigurationType::ToStandardOutput, "true");
+
+// default format: %datetime %level [%logger] %msg
+// we change to add file and func
+defaultConf.setGlobally(el::ConfigurationType::Format,
+                        "%datetime [%levshort,%logger,%fbase:%func:%line]"
+                        " %msg");
+
+el::Loggers::reconfigureLogger(OPENMONERO_LOG_CATEGORY, defaultConf);
+
+OMINFO << "OpenMonero is starting";
 
 auto do_not_relay_opt = opts.get_option<bool>("do-not-relay");
 auto testnet_opt      = opts.get_option<bool>("testnet");
@@ -42,115 +110,28 @@ bool stagenet         = *stagenet_opt;
 bool do_not_relay     = *do_not_relay_opt;
 
 if (testnet && stagenet)
-{
-    cerr << "testnet and stagenet cannot be specified at the same time!" << endl;
+{   
+    OMERROR << "testnet and stagenet cannot be specified at the same time!";
     return EXIT_FAILURE;
 }
-
-// check if config-file provided exist
-if (!boost::filesystem::exists(*config_file_opt))
-{
-    cerr << "Config file " << *config_file_opt
-         << " does not exist" << endl;
-    return EXIT_FAILURE;
-}
-
-nlohmann::json config_json;
-
-try
-{
-    // try reading and parsing json config file provided
-    std::ifstream i(*config_file_opt);
-    i >> config_json;
-}
-catch (const std::exception& e)
-{
-    cerr << "Error reading confing file "
-         << *config_file_opt << ": "
-         << e.what() << endl;
-    return EXIT_FAILURE;
-}
-
-//cast port number in string to uint16
-uint16_t app_port   = boost::lexical_cast<uint16_t>(*port_opt);
-
-
 
 // get the network type
 cryptonote::network_type nettype = testnet ?
   cryptonote::network_type::TESTNET : stagenet ?
   cryptonote::network_type::STAGENET : cryptonote::network_type::MAINNET;
 
-
 // create blockchainsetup instance and set its parameters
-// suc as blockchain status monitoring thread parameters
+// such as blockchain status monitoring thread parameters
 
-xmreg::BlockchainSetup bc_setup;
+xmreg::BlockchainSetup bc_setup {nettype, do_not_relay, *config_file_opt};
 
-bc_setup.net_type                            = nettype;
-bc_setup.do_not_relay                       = do_not_relay;
-bc_setup.refresh_block_status_every_seconds = config_json["refresh_block_status_every_seconds"];
-bc_setup.blocks_search_lookahead            = config_json["blocks_search_lookahead"];
-bc_setup.max_number_of_blocks_to_import     = config_json["max_number_of_blocks_to_import"];
-bc_setup.search_thread_life_in_seconds      = config_json["search_thread_life_in_seconds"];
-bc_setup.import_fee                         = config_json["wallet_import"]["fee"];
+OMINFO << "Using blockchain path: " << bc_setup.blockchain_path;
 
-string deamon_url;
-
-// get blockchain path
-// if confing.json paths are emtpy, defeault bittube
-// paths are going to be used
-path blockchain_path;
-
-switch (nettype)
-{
-    case cryptonote::network_type::MAINNET:
-        blockchain_path = path(config_json["blockchain-path"]["mainnet"].get<string>());
-        deamon_url = config_json["daemon-url"]["mainnet"];
-        bc_setup.import_payment_address_str
-                = config_json["wallet_import"]["mainnet"]["address"];
-        bc_setup.import_payment_viewkey_str
-                = config_json["wallet_import"]["mainnet"]["viewkey"];
-        break;
-    case cryptonote::network_type::TESTNET:
-        blockchain_path = path(config_json["blockchain-path"]["testnet"].get<string>());
-        deamon_url = config_json["daemon-url"]["testnet"];
-        bc_setup.import_payment_address_str
-                = config_json["wallet_import"]["testnet"]["address"];
-        bc_setup.import_payment_viewkey_str
-                = config_json["wallet_import"]["testnet"]["viewkey"];
-        break;
-    case cryptonote::network_type::STAGENET:
-        blockchain_path = path(config_json["blockchain-path"]["stagenet"].get<string>());
-        deamon_url = config_json["daemon-url"]["stagenet"];
-        bc_setup.import_payment_address_str
-                = config_json["wallet_import"]["stagenet"]["address"];
-        bc_setup.import_payment_viewkey_str
-                = config_json["wallet_import"]["stagenet"]["viewkey"];
-        break;
-    default:
-        cerr << "Invalid netowork type provided: " << static_cast<int>(nettype) << "\n";
-        return EXIT_FAILURE;
-}
+nlohmann::json config_json = bc_setup.get_config();
 
 
-if (!xmreg::get_blockchain_path(blockchain_path, nettype))
-{
-    cerr << "Error getting blockchain path.\n";
-    return EXIT_FAILURE;
-}
-
-// set remaining  blockchain status variables that depend on the network type
-bc_setup.blockchain_path         =  blockchain_path.string();
-bc_setup.deamon_url              = deamon_url;
-
-if (!bc_setup.parse_addr_and_viewkey())
-{
-    return EXIT_FAILURE;
-}
-
-cout << "Using blockchain path: " << blockchain_path.string() << endl;
-
+//cast port number in string to uint16
+auto app_port   = boost::lexical_cast<uint16_t>(*port_opt);
 
 // set mysql/mariadb connection details
 xmreg::MySqlConnector::url      = config_json["database"]["url"];
@@ -161,25 +142,24 @@ xmreg::MySqlConnector::dbname   = config_json["database"]["dbname"];
 
 
 // once we have all the parameters for the blockchain and our backend
-// we can create and instance of  CurrentBlockchainStatus class.
-// we are going to this through a shared pointer. This way we will
+// we can create and instance of CurrentBlockchainStatus class.
+// we are going to do this through a shared pointer. This way we will
 // have only once instance of this class, which we can easly inject
 // and pass around other class which need to access blockchain data
 
-auto current_bc_status = make_shared<xmreg::CurrentBlockchainStatus>(bc_setup);
-
+auto current_bc_status
+        = make_shared<xmreg::CurrentBlockchainStatus>(
+            bc_setup,
+            std::make_unique<xmreg::MicroCore>(),
+            std::make_unique<xmreg::RPCCalls>(bc_setup.deamon_url));
 
 // since CurrentBlockchainStatus class monitors current status
-// of the blockchain (e.g., current height), its seems logical to
-// make static objects for accessing the blockchain in this class.
-// this way bittube accessing blockchain variables (i.e. mcore and core_storage)
-// are not passed around like crazy everywhere. Uri( "file:///tmp/dh2048.pem"
-// There are here, and this is the only class that
-// has direct access to blockchain and talks (using rpc calls)
-// with the deamon.
+// of the blockchain (e.g., current height) .This is the only class
+// that has direct access to blockchain and talks (using rpc calls)
+// with the monero deamon.
 if (!current_bc_status->init_bittube_blockchain())
 {
-    cerr << "Error accessing blockchain." << endl;
+    OMERROR << "Error accessing blockchain.";
     return EXIT_FAILURE;
 }
 
@@ -187,8 +167,15 @@ if (!current_bc_status->init_bittube_blockchain())
 // info, e.g., current height. Information from this thread is used
 // by tx searching threads that are launched for each user independently,
 // when they log back or create new account.
-current_bc_status->start_monitor_blockchain_thread();
 
+std::thread blockchain_monitoring_thread(
+            [&current_bc_status]()
+{
+    current_bc_status->monitor_blockchain();
+});
+
+
+OMINFO << "Blockchain monitoring thread started";
 
 // try connecting to the mysql
 shared_ptr<xmreg::MySqlAccounts> mysql_accounts;
@@ -197,10 +184,12 @@ try
 {
     // MySqlAccounts will try connecting to the mysql database
     mysql_accounts = make_shared<xmreg::MySqlAccounts>(current_bc_status);
+
+    OMINFO << "Connected to the MySQL";
 }
 catch(std::exception const& e)
 {
-    cerr << e.what() << '\n';
+    OMERROR << e.what();
     return EXIT_FAILURE;
 }
 
@@ -222,25 +211,36 @@ catch(std::exception const& e)
 // from: https://tangentsoft.net/mysql++/doc/html/userman/tutorial.html#connopts
 //
 
-xmreg::MysqlPing mysql_ping {mysql_accounts->get_connection()};
+xmreg::MysqlPing mysql_ping {
+        mysql_accounts->get_connection(),
+        bc_setup.mysql_ping_every};
 
-xmreg::ThreadRAII mysql_ping_thread(
-        std::thread(std::ref(mysql_ping)),
-        xmreg::ThreadRAII::DtorAction::detach);
+std::thread mysql_ping_thread(
+            [&mysql_ping]()
+{
+    mysql_ping();
+});
+
+
+OMINFO << "MySQL ping thread started";
 
 bool stop_io_service = false;
 std::thread io_service_thread([&stop_io_service, &current_bc_status]() {
     while (!stop_io_service) {
         xmreg::getIOService().run();
         xmreg::getIOService().reset();
-        std::this_thread::sleep_for(std::chrono::seconds(current_bc_status->get_bc_setup().refresh_block_status_every_seconds));
+        std::this_thread::sleep_for(std::chrono::seconds(current_bc_status->get_bc_setup().refresh_block_status_every));
     }
 });
 
+OMINFO << "ASIO IO service thread started";
+
 xmreg::getTxSearchPool();
 
+OMINFO << "TxSearch thread pool started";
+
 // create REST JSON API services
-xmreg::YourMoneroRequests open_bittube(mysql_accounts, current_bc_status);
+xmreg::OpenMoneroRequests open_monero(mysql_accounts, current_bc_status);
 
 // create Open Monero APIs
 MAKE_RESOURCE(login);
@@ -269,7 +269,9 @@ service.publish(import_recent_wallet_request);
 service.publish(get_tx);
 service.publish(get_version);
 
-auto settings = make_shared<Settings>( );
+OMINFO << "JSON API endpoints published";
+
+auto settings = make_shared<Settings>();
 
 if (config_json["ssl"]["enable"])
 {
@@ -293,18 +295,72 @@ if (config_json["ssl"]["enable"])
 
     // can check using: curl -k -v -w'\n' -X POST 'https://127.0.0.1:1984/get_version'
 
-    cout << "Start the service at https://127.0.0.1:" << app_port << endl;
+    OMINFO << "Start the service at https://127.0.0.1:" << app_port;
 }
 else
 {
     settings->set_port(app_port);
-    settings->set_default_header( "Connection", "close" );
+    settings->set_default_header("Connection", "close");
 
-    cout << "Start the service at http://127.0.0.1:" << app_port  << endl;
+    OMINFO << "Start the service at http://127.0.0.1:" << app_port;
+}
+
+// intercept basic termination requests,
+// including Ctrl+c
+ExitHandler exitHandler;
+
+signal(SIGABRT, ExitHandler::exitHandler);
+signal(SIGTERM, ExitHandler::exitHandler);
+signal(SIGINT, ExitHandler::exitHandler);
+
+
+// main restbed thread. this is where
+// restbed will be running and handling
+// requests
+std::thread restbed_service(
+            [&service, &settings]()
+{
+    OMINFO << "Starting restbed service thread.";
+    service.start(settings);
+});
+
+
+// we are going to whait here for as long
+// as control+c hasn't been pressed
+{
+    std::unique_lock<std::mutex> lk(ExitHandler::m);
+    ExitHandler::cv.wait(lk, [&exitHandler]{
+        return exitHandler.shouldExit();});
 }
 
 
-service.start(settings);
+//////////////////////////////////////////////
+// Try to gracefully stop all threads/services
+//////////////////////////////////////////////
+
+OMINFO << "Stopping restbed service.";
+service.stop();
+restbed_service.join();
+
+OMINFO << "Stopping blockchain_monitoring_thread. Please wait.";
+current_bc_status->stop();
+blockchain_monitoring_thread.join();
+
+OMINFO << "Stopping TxSearch thread pool. Please wait.";
+xmreg::getTxSearchPool().stop();
+
+OMINFO << "Stopping ASIO IO service thread. Please wait.";
+stop_io_service = true;
+io_service_thread.join();
+
+OMINFO << "Stopping mysql_ping. Please wait.";
+mysql_ping.stop();
+mysql_ping_thread.join();
+
+OMINFO << "Disconnecting from database.";
+mysql_accounts->disconnect();
+
+OMINFO << "All done. Bye.";
 
 return EXIT_SUCCESS;
 }

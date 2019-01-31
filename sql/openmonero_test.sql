@@ -23,6 +23,9 @@ SET time_zone = "+00:00";
 -- Database: `bittube_test`
 --
 
+CREATE DATABASE IF NOT EXISTS `openmonero_test` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+USE `openmonero_test`;
+
 -- --------------------------------------------------------
 
 --
@@ -271,7 +274,7 @@ CREATE TABLE IF NOT EXISTS `Payments` (
   `tx_hash` varchar(64) NOT NULL DEFAULT '',
   `request_fulfilled` tinyint(1) NOT NULL DEFAULT '0',
   `import_fee` bigint(20) NOT NULL,
-  `payment_address` varchar(95) NOT NULL,
+  `payment_address` varchar(106) NOT NULL,
   `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

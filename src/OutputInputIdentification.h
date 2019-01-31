@@ -2,13 +2,13 @@
 // Created by mwo on 13/02/17.
 //
 
-#ifndef RESTBED_XMR_OUTPUTINPUTIDENTIFICATION_H
-#define RESTBED_XMR_OUTPUTINPUTIDENTIFICATION_H
+#pragma once
 
 #include "CurrentBlockchainStatus.h"
 #include "tools.h"
 
 #include <map>
+#include <utility>
 
 namespace xmreg
 {
@@ -39,7 +39,8 @@ class OutputInputIdentificationException: public std::runtime_error
  * because we dont have spendkey. But what we can do is, we can look for
  * candidate key images. And this can be achieved by checking if any mixin
  * in associated with the given key image, is our output. If it is our output,
- * then we assume its our key image (i.e. we spend this output). Off course this is only
+ * then we assume its our key image (i.e. we spend this output). Off course
+ * this is only
  * assumption as our outputs can be used in key images of others for their
  * mixin purposes. Thus, we sent to the frontend the list of key images
  * that we think are yours, and the frontend, because it has spendkey,
@@ -84,7 +85,9 @@ public:
     bool is_rct;
     uint8_t rct_type;
 
-    uint64_t mixin_no {};
+    uint64_t total_received {0};
+
+    uint64_t mixin_no {0};
 
     // for each output, in a tx, check if it belongs
     // to the given account of specific address and viewkey
@@ -94,25 +97,23 @@ public:
     key_derivation derivation;
 
 
-    uint64_t total_received;
-
     vector<output_info> identified_outputs;
     vector<input_info>  identified_inputs;
 
-    std::shared_ptr<CurrentBlockchainStatus> current_bc_status;
+    // default constructor. Useful for unit tests
+    OutputInputIdentification() = default;
 
     OutputInputIdentification(const address_parse_info* _a,
                               const secret_key* _v,
                               const transaction* _tx,
                               crypto::hash const& _tx_hash,
-                              bool is_coinbase,
-                              std::shared_ptr<CurrentBlockchainStatus> _current_bc_status);
+                              bool is_coinbase);
 
     /**
      * FIRST step. search for the incoming xmr using address, viewkey and
      * outputs public keys.
      */
-    void
+    virtual void
     identify_outputs();
 
 
@@ -133,20 +134,24 @@ public:
      * known_outputs_keys is pair of <output public key, output amount>
      *
      */
-    void
-    identify_inputs(unordered_map<public_key, uint64_t> const& known_outputs_keys);
+    virtual void
+    identify_inputs(
+            unordered_map<public_key, uint64_t> const& known_outputs_keys,
+            CurrentBlockchainStatus* current_bc_status);
 
-    string const&
+    virtual string const&
     get_tx_hash_str();
 
-    string const&
+    virtual string const&
     get_tx_prefix_hash_str();
 
-    string const&
+    virtual string const&
     get_tx_pub_key_str();
 
-    uint64_t
+    virtual uint64_t
     get_mixin_no();
+
+    virtual ~OutputInputIdentification() = default;
 
 private:
 
@@ -156,9 +161,89 @@ private:
 
     // transaction that is beeing search
     const transaction* tx;
-
 };
+
+
+//class BaseIdentifier {
+
+//public:
+//    BaseIdentifier(address_parse_info const* _a,
+//                   const secret_key* _v,
+//                   const transaction* _tx)
+//        : address_info {_a}, viewkey {_v}, tx {_tx}
+//    {
+//    }
+
+//    virtual void identify() = 0;
+
+//protected:
+
+//    // address and viewkey for this search thread.
+//    address_parse_info const* address_info;
+//    secret_key const* viewkey;
+
+//    // transaction that is beeing search
+//    transaction const* tx;
+
+//};
+
+//class OutputIdentifier : public BaseIdentifier
+//{
+//    using BaseIdentifier::BaseIdentifier;
+
+//    using key_imgs_map = unordered_map<public_key, uint64_t>;
+
+//    // define a structure to keep information about found
+//    // outputs that we can need in later parts.
+//    struct output_info
+//    {
+//        public_key pub_key;
+//        uint64_t   amount;
+//        uint64_t   idx_in_tx;
+//        string     rtc_outpk;
+//        string     rtc_mask;
+//        string     rtc_amount;
+//    };
+
+//public:
+
+//    void
+//    set_known_outputs(key_imgs_map const* _known_outputs)
+//    {
+//        known_outputs_keys = _known_outputs;
+//    }
+
+//    void
+//    identify()
+//    {}
+
+//private:
+//    key_imgs_map const* known_outputs_keys {nullptr};
+//};
+
+//class InpputIdentifier : public BaseIdentifier
+//{
+
+//    using BaseIdentifier::BaseIdentifier;
+
+//    // define a structure to keep information about found
+//    // inputs that we can need in later parts.
+//    struct input_info
+//    {
+//        string key_img;
+//        uint64_t amount;
+//        public_key out_pub_key;
+//    };
+
+
+//public:
+
+//    void
+//    identify()
+//    {}
+//};
+
+
 
 }
 
-#endif //RESTBED_XMR_OUTPUTINPUTIDENTIFICATION_H
