@@ -1784,6 +1784,25 @@ OpenMoneroRequests::make_resource(
     return resource_ptr;
 }
 
+shared_ptr<Resource>
+OpenMoneroRequests::make_gp_resource(
+        function< void (OpenMoneroRequests&, const shared_ptr< Session >,
+                        const Bytes& ) > handle_func,
+        const string& path)
+{
+    auto a_request = std::bind(handle_func, *this,
+                               std::placeholders::_1,
+                               std::placeholders::_2);
+
+    shared_ptr<Resource> resource_ptr = make_shared<Resource>();
+
+    resource_ptr->set_path(path);
+    resource_ptr->set_method_handler( "OPTIONS", generic_options_handler);
+    resource_ptr->set_method_handler( "POST"   , handel_(a_request) );
+    resource_ptr->set_method_handler( "GET"   , handel_(a_request) );
+
+    return resource_ptr;
+}
 
 void
 OpenMoneroRequests::generic_options_handler(
