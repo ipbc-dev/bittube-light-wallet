@@ -222,7 +222,7 @@ MAKE_RESOURCE(submit_raw_tx);
 MAKE_RESOURCE(import_wallet_request);
 MAKE_RESOURCE(import_recent_wallet_request);
 MAKE_RESOURCE(get_tx);
-MAKE_RESOURCE(get_version);
+MAKE_GP_RESOURCE(get_version);
 
 // restbed service
 Service service;
