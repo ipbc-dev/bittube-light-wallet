@@ -142,7 +142,7 @@ MicroCore::get_tx(crypto::hash const& tx_hash, transaction& tx) const
         return true;
     }
 
-    return true;
+    return false;
 }
 
 bool
