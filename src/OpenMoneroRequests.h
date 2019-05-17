@@ -145,6 +145,9 @@ public:
     inline uint64_t
     get_current_blockchain_height();
 
+    void
+    confirm_tx_sent(const shared_ptr<Session> session, const Bytes & body);
+
 private:
 
     bool

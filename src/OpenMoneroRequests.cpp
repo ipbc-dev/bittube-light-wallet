@@ -971,6 +971,8 @@ OpenMoneroRequests::submit_raw_tx(
 
     j_response["status"] = "success";
 
+    crypto::hash tx_hash = get_transaction_hash(tx_to_be_submitted);
+    j_response["tx_hash"]  = pod_to_hex(tx_hash);
 
     string response_body = j_response.dump();
 
@@ -2092,7 +2094,126 @@ OpenMoneroRequests::session_close(
                     response_body, response_headers);
 }
 
+void
+OpenMoneroRequests::confirm_tx_sent(const shared_ptr<Session> session, const Bytes & body)
+{
+    json j_request;
+    json j_response;
+
+    // Init important response values
+    j_response["found"] = false;
+    j_response["correct"] = false;
+    j_response["error"] = false;
+
+    // Check required parameters
+    vector<string> required_values {"address", "view_key", "amount", "txid"};
+    if (!parse_request(body, required_values, j_request, j_response))
+    {
+        j_response["error"] = true;
+        j_response["status"] = "bad request";
+        return session_close(session, j_response);
+    }
+
+    // Variables for arameters
+    string xmr_address;
+    string view_key;
+    uint64_t amount;
+    string tx_hash_str;
+
+    // Get parameters from json into variables
+    try
+    {
+        xmr_address = j_request["address"];
+        view_key    = j_request["view_key"];
+        amount      = j_request["amount"];
+        tx_hash_str = j_request["txid"];
+    }
+    catch (json::exception const& e)
+    {
+        cerr << "json exception: " << e.what() << '\n';
+        j_response["error"] = true;
+        j_response["status"] = "json error";
+        return session_close(session, j_response);
+    }
+
+    // Parse TXID into pod
+    crypto::hash tx_hash;
+    if (!hex_to_pod(tx_hash_str, tx_hash))
+    {
+        j_response["error"] = true;
+        j_response["status"] = "Cant parse tx hash! : " + tx_hash_str;
+        return session_close(session, j_response);
+    }
+
+    // Parse ViewKey into secret_key
+    secret_key viewkey;
+    if (!xmreg::parse_str_secret_key(view_key, viewkey))
+    {
+        j_response["error"] = true;
+        j_response["status"] = "viewkey parse error";
+        return session_close(session, j_response);
+    }
+
+    // Parse address into address_parse_info
+    address_parse_info address_info;
+    if (!xmreg::parse_str_address(xmr_address, address_info))
+    {
+        j_response["error"] = true;
+        j_response["status"] = "address parse error";
+        return session_close(session, j_response);
+    }
+
+    transaction tx;
+    bool tx_found {false};
+
+    // Get TX from blockchain
+    tx_found = current_bc_status->get_tx(tx_hash, tx);
+
+    // Not found in blockchain, find in mempool
+    if (!tx_found) {
+        vector<pair<uint64_t, transaction>> mempool_txs = current_bc_status->get_mempool_txs();
+        for (auto const& mtx: mempool_txs)
+        {
+            if (get_transaction_hash(mtx.second) == tx_hash)
+            {
+                tx = mtx.second;
+                tx_found = true;
+                break;
+            }
+        }
+    }
+
+    // Transaction was found, check it
+    if (tx_found)
+    {
+        // Identify outputs of tx with viewkey
+        OutputInputIdentification oi_identification { &address_info, &viewkey, &tx, tx_hash, false};
+        oi_identification.identify_outputs();
+
+        // auto identifier = make_identifier(tx, make_unique<LegacyPaymentID>(&address_info, &viewkey));
+        // auto pay_id = identifier.template get<LegacyPaymentID>()->get();
+        // string payment_id_str = pod_to_hex(pay_id);
+        string payment_id_str = current_bc_status->get_payment_id_as_string(tx);
+
+        // Add together outputs
+        uint64_t total_received {0};
+        for (auto& out_info: oi_identification.identified_outputs)
+        {
+            // OMINFO << "output " << out_info.idx_in_tx << " " << out_info.amount << "\n";
+            total_received += out_info.amount;
+        }
+
+        // If decoded correctly and there is money, check that its enough
+        if (total_received != 0) {
+            j_response["found"] = true;
+            j_response["correct"] = total_received >= amount;
+            j_response["amount"] = amount;
+            j_response["total_received"] = total_received;
+            j_response["payment_id"] = payment_id_str;
+        }
+    }
+
+    session_close(session, j_response);
 }
 
-
-
+}
