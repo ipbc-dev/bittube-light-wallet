@@ -6,7 +6,7 @@
 #define RESTBED_XMR_MYSQLACCOUNTS_H
 
 #include "../tools.h"
-#include "MySqlConnector.h"
+#include "MySqlConnectionPool.h"
 
 
 
@@ -35,13 +35,7 @@ class CurrentBlockchainStatus;
 
 class MysqlInputs
 {
-
-    shared_ptr<MySqlConnector> conn;
-
 public:
-
-    MysqlInputs(shared_ptr<MySqlConnector> _conn);
-
     bool
     select_for_out(const uint64_t& output_id, vector<XmrInput>& ins);
 };
@@ -50,13 +44,7 @@ public:
 
 class MysqlOutpus
 {
-
-    shared_ptr<MySqlConnector> conn;
-
 public:
-
-    MysqlOutpus(shared_ptr<MySqlConnector> _conn);
-
     bool
     exist(const string& output_public_key_str, XmrOutput& out);
 };
@@ -65,13 +53,7 @@ public:
 
 class MysqlTransactions
 {
-
-    shared_ptr<MySqlConnector> conn;
-
 public:
-
-    MysqlTransactions(shared_ptr<MySqlConnector> _conn);
-
     uint64_t
     mark_spendable(const uint64_t& tx_id_no, bool spendable = true);
 
@@ -87,13 +69,7 @@ public:
 
 class MysqlPayments
 {
-
-    shared_ptr<MySqlConnector> conn;
-
 public:
-
-    MysqlPayments(shared_ptr<MySqlConnector> _conn);
-
     bool
     select_by_payment_id(const string& payment_id, vector<XmrPayment>& payments);
 };
@@ -101,9 +77,6 @@ public:
 
 class MySqlAccounts
 {
-
-    shared_ptr<MySqlConnector> conn;
-
     shared_ptr<MysqlTransactions> mysql_tx;
 
     shared_ptr<MysqlOutpus> mysql_out;
@@ -117,9 +90,6 @@ class MySqlAccounts
 public:
 
     MySqlAccounts(shared_ptr<CurrentBlockchainStatus> _current_bc_status);
-
-    MySqlAccounts(shared_ptr<CurrentBlockchainStatus> _current_bc_status,
-                  shared_ptr<MySqlConnector> _conn);
 
     bool
     select(const string& address, XmrAccount& account);
@@ -187,12 +157,6 @@ public:
     bool
     get_total_recieved(const uint64_t& account_id, uint64_t& amount);
 
-    void
-    disconnect();
-
-    shared_ptr<MySqlConnector>
-    get_connection();
-
     /**
      * DONT use!!!
      *
@@ -210,14 +174,14 @@ public:
         static_assert(std::is_base_of<Table, std::decay_t<T>>::value, "given class is not Table");
 
         string sql {"SELECT `auto_increment` FROM INFORMATION_SCHEMA.TABLES WHERE table_name = '"};
-        sql += table_class.table_name() + "' AND table_schema = '" +  MySqlConnector::dbname + "'";
-
-        Query query = conn->query(sql);
-        query.parse();
+        sql += table_class.table_name() + "' AND table_schema = '" +  MySqlConnectionPool::dbname + "'";
 
         try
         {
-            conn->check_if_connected();
+            mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
+            Query query = cp->query(sql);
+            query.parse();
+            // conn->check_if_connected();
 
             StoreQueryResult  sr = query.store();
 

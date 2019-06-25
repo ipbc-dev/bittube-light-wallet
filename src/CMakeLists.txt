@@ -7,7 +7,7 @@ set(SOURCE_FILES
 		tools.cpp
 		CmdLineOptions.cpp
 		CurrentBlockchainStatus.cpp
-        db/MySqlConnector.cpp
+        db/MySqlConnectionPool.cpp
         db/MySqlAccounts.cpp
         db/ssqlses.cpp
 		OpenMoneroRequests.cpp
@@ -17,7 +17,6 @@ set(SOURCE_FILES
 		version.h.in
 		BlockchainSetup.cpp
 		ThreadRAII.cpp
-                db/MysqlPing.cpp
                 TxUnlockChecker.cpp
                 UniversalIdentifier.cpp
                 RandomOutputs.cpp)
