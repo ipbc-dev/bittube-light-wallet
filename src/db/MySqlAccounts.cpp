@@ -13,20 +13,15 @@
 namespace xmreg
 {
 
-
-MysqlInputs::MysqlInputs(shared_ptr<MySqlConnector> _conn)
-        : conn {_conn}
-{}
-
 bool
 MysqlInputs::select_for_out(const uint64_t& output_id,
                             vector<XmrInput>& ins)
 {
     try
     {
-        conn->check_if_connected();
+        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
 
-        Query query = conn->query(XmrInput::SELECT_STMT4);
+        Query query = cp->query(XmrInput::SELECT_STMT4);
         query.parse();
 
         query.storein(ins, output_id);
@@ -35,27 +30,21 @@ MysqlInputs::select_for_out(const uint64_t& output_id,
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
+        MYSQL_EXCEPTION_MSG(e);
         //throw  e;
     }
 
     return false;
 }
 
-
-MysqlOutpus::MysqlOutpus(shared_ptr<MySqlConnector> _conn): conn {_conn}
-{}
-
-
-
 bool
 MysqlOutpus::exist(const string& output_public_key_str, XmrOutput& out)
 {
     try
     {
-        conn->check_if_connected();
+        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
 
-        Query query = conn->query(XmrOutput::EXIST_STMT);
+        Query query = cp->query(XmrOutput::EXIST_STMT);
         query.parse();
 
         vector<XmrOutput> outs;
@@ -70,26 +59,21 @@ MysqlOutpus::exist(const string& output_public_key_str, XmrOutput& out)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
+        MYSQL_EXCEPTION_MSG(e);
         return false;
     }
 
     return true;
 }
 
-
-MysqlTransactions::MysqlTransactions(shared_ptr<MySqlConnector> _conn)
-    : conn {_conn}
-{}
-
 uint64_t
 MysqlTransactions::mark_spendable(const uint64_t& tx_id_no, bool spendable)
 {
     try
     {
-        conn->check_if_connected();
+        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
 
-        Query query = conn->query(
+        Query query = cp->query(
                     spendable ?
                       XmrTransaction::MARK_AS_SPENDABLE_STMT
                                 : XmrTransaction::MARK_AS_NONSPENDABLE_STMT);
@@ -102,7 +86,7 @@ MysqlTransactions::mark_spendable(const uint64_t& tx_id_no, bool spendable)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
+        MYSQL_EXCEPTION_MSG(e);
         //throw  e;
     }
 
@@ -114,9 +98,9 @@ MysqlTransactions::delete_tx(const uint64_t& tx_id_no)
 {
     try
     {
-        conn->check_if_connected();
+        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
 
-        Query query = conn->query(XmrTransaction::DELETE_STMT);
+        Query query = cp->query(XmrTransaction::DELETE_STMT);
         query.parse();
 
         SimpleResult sr = query.execute(tx_id_no);
@@ -125,7 +109,7 @@ MysqlTransactions::delete_tx(const uint64_t& tx_id_no)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
+        MYSQL_EXCEPTION_MSG(e);
         //throw  e;
     }
 
@@ -139,9 +123,9 @@ MysqlTransactions::exist(const uint64_t& account_id,
 {
     try
     {
-        conn->check_if_connected();
+        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
 
-        Query query = conn->query(XmrTransaction::EXIST_STMT);
+        Query query = cp->query(XmrTransaction::EXIST_STMT);
         query.parse();
 
         vector<XmrTransaction> outs;
@@ -156,7 +140,7 @@ MysqlTransactions::exist(const uint64_t& account_id,
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
+        MYSQL_EXCEPTION_MSG(e);
         return false;
     }
 
@@ -170,9 +154,9 @@ MysqlTransactions::get_total_recieved(const uint64_t& account_id,
 {
     try
     {
-        conn->check_if_connected();
+        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
 
-        Query query = conn->query(XmrTransaction::SUM_XMR_RECIEVED);
+        Query query = cp->query(XmrTransaction::SUM_XMR_RECIEVED);
         query.parse();
 
         StoreQueryResult sqr = query.store(account_id);
@@ -185,14 +169,11 @@ MysqlTransactions::get_total_recieved(const uint64_t& account_id,
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
+        MYSQL_EXCEPTION_MSG(e);
     }
 
     return false;
 }
-
-MysqlPayments::MysqlPayments(shared_ptr<MySqlConnector> _conn): conn {_conn}
-{}
 
 bool
 MysqlPayments::select_by_payment_id(const string& payment_id,
@@ -201,9 +182,9 @@ MysqlPayments::select_by_payment_id(const string& payment_id,
 
     try
     {
-        conn->check_if_connected();
+        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
 
-        Query query = conn->query(XmrPayment::SELECT_STMT2);
+        Query query = cp->query(XmrPayment::SELECT_STMT2);
         query.parse();
 
         payments.clear();
@@ -213,7 +194,7 @@ MysqlPayments::select_by_payment_id(const string& payment_id,
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
+        MYSQL_EXCEPTION_MSG(e);
         //throw  e;
     }
 
@@ -224,32 +205,17 @@ MySqlAccounts::MySqlAccounts(
         shared_ptr<CurrentBlockchainStatus> _current_bc_status)
     : current_bc_status {_current_bc_status}
 {
-    // create connection to the mysql
-    conn = make_shared<MySqlConnector>(
-            new mysqlpp::ReconnectOption(true));
-
     _init();
 }
-
-MySqlAccounts::MySqlAccounts(
-        shared_ptr<CurrentBlockchainStatus> _current_bc_status,
-        shared_ptr<MySqlConnector> _conn)
-    : current_bc_status {_current_bc_status}
-{
-    conn = _conn;
-
-    _init();
-}
-
 
 bool
 MySqlAccounts::select(const string& address, XmrAccount& account)
 {
     try
     {
-        conn->check_if_connected();
+        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
 
-        Query query = conn->query(XmrAccount::SELECT_STMT2);
+        Query query = cp->query(XmrAccount::SELECT_STMT2);
         query.parse();
 
         vector<XmrAccount> res;
@@ -264,7 +230,7 @@ MySqlAccounts::select(const string& address, XmrAccount& account)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
+        MYSQL_EXCEPTION_MSG(e);
         //throw  e;
     }
 
@@ -277,9 +243,9 @@ MySqlAccounts::insert(const T& data_to_insert)
 {
     try
     {
-        conn->check_if_connected();
+        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
 
-        Query query = conn->query();
+        Query query = cp->query();
 
         query.insert(data_to_insert);
 
@@ -291,7 +257,7 @@ MySqlAccounts::insert(const T& data_to_insert)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
+        MYSQL_EXCEPTION_MSG(e);
     }
 
     return 0;
@@ -316,9 +282,9 @@ MySqlAccounts::insert(const vector<T>& data_to_insert)
 {
     try
     {
-        conn->check_if_connected();
+        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
 
-        Query query = conn->query();
+        Query query = cp->query();
 
         query.insert(data_to_insert.begin(), data_to_insert.end());
 
@@ -329,7 +295,7 @@ MySqlAccounts::insert(const vector<T>& data_to_insert)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
+        MYSQL_EXCEPTION_MSG(e);
     }
 
     return 0;
@@ -350,9 +316,9 @@ MySqlAccounts::select(uint64_t account_id, vector<T>& selected_data)
 {
     try
     {
-        conn->check_if_connected();
+        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
 
-        Query query = conn->query((query_no == 1
+        Query query = cp->query((query_no == 1
                                    ? T::SELECT_STMT : T::SELECT_STMT2));
         query.parse();
 
@@ -367,7 +333,7 @@ MySqlAccounts::select(uint64_t account_id, vector<T>& selected_data)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
+        MYSQL_EXCEPTION_MSG(e);
     }
 
     return false;
@@ -410,9 +376,9 @@ MySqlAccounts::update(T const& orginal_row, T const& new_row)
 {
     try
     {
-        conn->check_if_connected();
+        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
 
-        Query query = conn->query();
+        Query query = cp->query();
 
         query.update(orginal_row, new_row);
 
@@ -422,7 +388,7 @@ MySqlAccounts::update(T const& orginal_row, T const& new_row)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
+        MYSQL_EXCEPTION_MSG(e);
     }
 
     return false;
@@ -460,9 +426,9 @@ MySqlAccounts::select_by_primary_id(uint64_t id, T& selected_data)
 {
      try
     {
-        conn->check_if_connected();
+        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
 
-        Query query = conn->query(T::SELECT_STMT3);
+        Query query = cp->query(T::SELECT_STMT3);
         query.parse();
 
         vector<T> outs;
@@ -477,7 +443,7 @@ MySqlAccounts::select_by_primary_id(uint64_t id, T& selected_data)
     }
     catch (std::exception const& e)
     {
-        MYSQL_EXCEPTION_MSG(e, conn);
+        MYSQL_EXCEPTION_MSG(e);
         //throw  e;
     }
 
@@ -648,20 +614,6 @@ MySqlAccounts::get_total_recieved(const uint64_t& account_id,
 }
 
 void
-MySqlAccounts::disconnect()
-{
-    get_connection()->get_connection().disconnect();
-}
-
-
-shared_ptr<MySqlConnector>
-MySqlAccounts::get_connection()
-{
-    return conn;
-}
-
-
-void
 MySqlAccounts::set_bc_status_provider(
         shared_ptr<CurrentBlockchainStatus> bc_status_provider)
 {
@@ -671,12 +623,10 @@ MySqlAccounts::set_bc_status_provider(
 void
 MySqlAccounts::_init()
 {
-
-    // use same connection when working with other tables
-    mysql_tx        = make_shared<MysqlTransactions>(conn);
-    mysql_out       = make_shared<MysqlOutpus>(conn);
-    mysql_in        = make_shared<MysqlInputs>(conn);
-    mysql_payment   = make_shared<MysqlPayments>(conn);
+    mysql_tx        = make_shared<MysqlTransactions>();
+    mysql_out       = make_shared<MysqlOutpus>();
+    mysql_in        = make_shared<MysqlInputs>();
+    mysql_payment   = make_shared<MysqlPayments>();
 }
 
 }

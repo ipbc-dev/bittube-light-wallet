@@ -211,6 +211,9 @@ TxSearch::operator()()
 
             size_t tx_idx {0};
 
+            // grab a mysql connection from pool to use for transactions
+            mysqlpp::ScopedConnection conn(MySqlConnectionPool::get(), true);
+
             for (auto const& tx_tuple: txs_data)
             {
                 crypto::hash const& tx_hash = txs_hashes_from_blocks[tx_idx];
@@ -272,11 +275,7 @@ TxSearch::operator()()
                     if (!mysql_transaction)
                     {
                         // start mysql transaction here
-                        mysql_transaction
-                                = unique_ptr<mysqlpp::Transaction>(
-                                           new mysqlpp::Transaction(
-                                                   xmr_accounts->get_connection()
-                                                           ->get_connection()));
+                        mysql_transaction = unique_ptr<mysqlpp::Transaction>(new mysqlpp::Transaction(*conn));
 
                         // when we rescan blockchain some txs can already
                         // be present in the mysql. So remove them, and their
@@ -432,11 +431,7 @@ TxSearch::operator()()
                     if (!mysql_transaction)
                     {
                         // start mysql transaction here if not already present
-                        mysql_transaction
-                                = unique_ptr<mysqlpp::Transaction>(
-                                new mysqlpp::Transaction(
-                                        xmr_accounts->get_connection()
-                                                ->get_connection()));
+                        mysql_transaction = unique_ptr<mysqlpp::Transaction>(new mysqlpp::Transaction(*conn));
 
                         // when we rescan blockchain some txs can already
                         // be present in the mysql. So remove them, and their

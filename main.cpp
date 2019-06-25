@@ -4,7 +4,6 @@
 #include "src/OpenMoneroRequests.h"
 #include "src/ThreadRAII.h"
 #include "src/TxSearch.h"
-#include "src/db/MysqlPing.h"
 
 #include <iostream>
 #include <memory>
@@ -134,11 +133,11 @@ nlohmann::json config_json = bc_setup.get_config();
 auto app_port   = boost::lexical_cast<uint16_t>(*port_opt);
 
 // set mysql/mariadb connection details
-xmreg::MySqlConnector::url      = config_json["database"]["url"];
-xmreg::MySqlConnector::port     = config_json["database"]["port"];
-xmreg::MySqlConnector::username = config_json["database"]["user"];
-xmreg::MySqlConnector::password = config_json["database"]["password"];
-xmreg::MySqlConnector::dbname   = config_json["database"]["dbname"];
+xmreg::MySqlConnectionPool::url       = config_json["database"]["url"];
+xmreg::MySqlConnectionPool::port      = config_json["database"]["port"];
+xmreg::MySqlConnectionPool::username  = config_json["database"]["user"];
+xmreg::MySqlConnectionPool::password  = config_json["database"]["password"];
+xmreg::MySqlConnectionPool::dbname    = config_json["database"]["dbname"];
 
 
 // once we have all the parameters for the blockchain and our backend
@@ -182,47 +181,18 @@ shared_ptr<xmreg::MySqlAccounts> mysql_accounts;
 
 try
 {
-    // MySqlAccounts will try connecting to the mysql database
     mysql_accounts = make_shared<xmreg::MySqlAccounts>(current_bc_status);
+    mysqlpp::ScopedConnection cp(xmreg::MySqlConnectionPool::get(), true);
+    if (!cp) throw std::runtime_error("No connection to the mysqldb");
+    if (!cp->thread_aware()) throw std::runtime_error("mysqldb connection is not thread aware");
 
-    OMINFO << "Connected to the MySQL";
+    OMINFO << "MySQL Pool Connected";
 }
 catch(std::exception const& e)
 {
     OMERROR << e.what();
     return EXIT_FAILURE;
 }
-
-// at this point we should be connected to the mysql
-
-// mysql connection will timeout after few hours
-// of iddle time. so we have this tiny helper
-// thread to ping mysql, thus keeping it alive.
-//
-// "A completely different way to tackle this,
-// if your program doesn’t block forever waiting on I/O while idle,
-// is to periodically call Connection::ping(). [12]
-// This sends the smallest possible amount of data to the database server,
-// which will reset its idle timer and cause it to respond, so ping() returns true.
-// If it returns false instead, you know you need to reconnect to the server.
-// Periodic pinging is easiest to do if your program uses asynchronous I/O,
-// threads, or some kind of event loop to ensure that you can call
-// something periodically even while the rest of the program has nothing to do."
-// from: https://tangentsoft.net/mysql++/doc/html/userman/tutorial.html#connopts
-//
-
-xmreg::MysqlPing mysql_ping {
-        mysql_accounts->get_connection(),
-        bc_setup.mysql_ping_every};
-
-std::thread mysql_ping_thread(
-            [&mysql_ping]()
-{
-    mysql_ping();
-});
-
-
-OMINFO << "MySQL ping thread started";
 
 bool stop_io_service = false;
 std::thread io_service_thread([&stop_io_service, &current_bc_status]() {
@@ -354,13 +324,6 @@ xmreg::getTxSearchPool().stop();
 OMINFO << "Stopping ASIO IO service thread. Please wait.";
 stop_io_service = true;
 io_service_thread.join();
-
-OMINFO << "Stopping mysql_ping. Please wait.";
-mysql_ping.stop();
-mysql_ping_thread.join();
-
-OMINFO << "Disconnecting from database.";
-mysql_accounts->disconnect();
 
 OMINFO << "All done. Bye.";
 
