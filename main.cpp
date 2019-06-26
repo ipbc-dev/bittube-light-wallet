@@ -245,6 +245,7 @@ OMINFO << "JSON API endpoints published";
 
 auto settings = make_shared<Settings>();
 
+settings->set_worker_limit(10);
 if (config_json["ssl"]["enable"])
 {
     // based on the example provided at
