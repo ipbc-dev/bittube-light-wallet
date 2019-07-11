@@ -66,6 +66,11 @@ OpenMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
         return;
     }
 
+    bool create_only = false;
+    try {
+        create_only = j_request["create_only"];
+    } catch (...) { /* ignore */ }
+
     // a placeholder for exciting or new account data
     XmrAccount acc;
 
@@ -82,6 +87,10 @@ OpenMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
         // for this address
 
         uint64_t current_blockchain_height = get_current_blockchain_height();
+        try {
+            current_blockchain_height = boost::lexical_cast<uint64_t>(j_request["create_height"]);
+            if (current_blockchain_height <= 0) current_blockchain_height = 1;
+        } catch (...) { /* ignore */ }
 
         // initialize current blockchain timestamp with current time
         // in a moment we will try to get last block timestamp
@@ -135,7 +144,7 @@ OpenMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
     // so by now new account has been created or it already exists
     // so we just login into it.
 
-    if (login_and_start_search_thread(xmr_address, view_key, acc, j_response))
+    if (create_only || login_and_start_search_thread(xmr_address, view_key, acc, j_response))
     {
        // if successfuly logged in and created search thread
         j_response["status"]      = "success";
