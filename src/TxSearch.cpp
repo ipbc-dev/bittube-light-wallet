@@ -211,8 +211,8 @@ TxSearch::operator()()
 
             size_t tx_idx {0};
 
-            // grab a mysql connection from pool to use for transactions
-            mysqlpp::ScopedConnection conn(MySqlConnectionPool::get(), true);
+            // grab a mysql connection from pool to use for transaction
+            auto conn = MySqlConnectionPool::get().grab_shared();
 
             for (auto const& tx_tuple: txs_data)
             {
@@ -338,7 +338,7 @@ TxSearch::operator()()
 
 
                     // insert tx_data into mysql's Transactions table
-                    tx_mysql_id = xmr_accounts->insert(tx_data);
+                    tx_mysql_id = xmr_accounts->insert(tx_data, conn);
 
                     // get amount specific (i.e., global) indices of outputs
                     if (!current_bc_status->get_amount_specific_indices(
@@ -396,7 +396,7 @@ TxSearch::operator()()
 
                     // insert all outputs found into mysql's outputs table
                     uint64_t no_rows_inserted
-                            = xmr_accounts->insert(outputs_found);
+                            = xmr_accounts->insert(outputs_found, conn);
 
                     if (no_rows_inserted == 0)
                     {                        
@@ -476,7 +476,7 @@ TxSearch::operator()()
                         XmrOutput out;
 
                         if (xmr_accounts->output_exists(
-                                    pod_to_hex(in_info.out_pub_key), out))
+                                    pod_to_hex(in_info.out_pub_key), out, conn))
                         {
 
                             // seems that this key image is ours.
@@ -554,7 +554,7 @@ TxSearch::operator()()
                             tx_data.timestamp    = *blk_timestamp_mysql_format;
 
                             // insert tx_data into mysql's Transactions table
-                            tx_mysql_id = xmr_accounts->insert(tx_data);
+                            tx_mysql_id = xmr_accounts->insert(tx_data, conn);
 
                             if (tx_mysql_id == 0)
                             {
@@ -580,7 +580,7 @@ TxSearch::operator()()
                                                         //before we made it 0
 
                         uint64_t no_rows_inserted
-                                = xmr_accounts->insert(inputs_found);
+                                = xmr_accounts->insert(inputs_found, conn);
 
                         if (no_rows_inserted == 0)
                         {
@@ -613,7 +613,7 @@ TxSearch::operator()()
                     = DateTime(static_cast<time_t>(
                                    blocks.back().timestamp));
 
-            if (xmr_accounts->update(*acc, updated_acc))
+            if (xmr_accounts->update(*acc, updated_acc, conn))
             {
                 // iff success, set acc to updated_acc;
                 //cout << "scanned_block_height updated\n";
@@ -913,11 +913,11 @@ TxSearch::set_search_thread_life(seconds life_seconds)
 }
 
 bool
-TxSearch::delete_existing_tx_if_exists(string const& tx_hash)
+TxSearch::delete_existing_tx_if_exists(string const& tx_hash, shared_ptr<mysqlpp::Connection> conn)
 {
     XmrTransaction tx_data_existing;
 
-    if (xmr_accounts->tx_exists(acc->id.data, tx_hash, tx_data_existing))
+    if (xmr_accounts->tx_exists(acc->id.data, tx_hash, tx_data_existing, conn))
     {
         OMINFO << '\n' << address_prefix
                   + ": tx " << tx_hash
@@ -926,7 +926,7 @@ TxSearch::delete_existing_tx_if_exists(string const& tx_hash)
         // if tx is already present for that user,
         // we remove it, as we get it data from scrach
 
-        if (xmr_accounts->delete_tx(tx_data_existing.id.data) == 0)
+        if (xmr_accounts->delete_tx(tx_data_existing.id.data, conn) == 0)
         {
             OMERROR << address_prefix  + ": cant remove tx "
                     << tx_hash;

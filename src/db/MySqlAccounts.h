@@ -37,7 +37,7 @@ class MysqlInputs
 {
 public:
     bool
-    select_for_out(const uint64_t& output_id, vector<XmrInput>& ins);
+    select_for_out(const uint64_t& output_id, vector<XmrInput>& ins, shared_ptr<mysqlpp::Connection> conn = nullptr);
 };
 
 
@@ -46,7 +46,7 @@ class MysqlOutpus
 {
 public:
     bool
-    exist(const string& output_public_key_str, XmrOutput& out);
+    exist(const string& output_public_key_str, XmrOutput& out, shared_ptr<mysqlpp::Connection> conn = nullptr);
 };
 
 
@@ -55,23 +55,23 @@ class MysqlTransactions
 {
 public:
     uint64_t
-    mark_spendable(const uint64_t& tx_id_no, bool spendable = true);
+    mark_spendable(const uint64_t& tx_id_no, bool spendable = true, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     uint64_t
-    delete_tx(const uint64_t& tx_id_no);
+    delete_tx(const uint64_t& tx_id_no, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     bool
-    exist(const uint64_t& account_id, const string& tx_hash_str, XmrTransaction& tx);
+    exist(const uint64_t& account_id, const string& tx_hash_str, XmrTransaction& tx, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     bool
-    get_total_recieved(const uint64_t& account_id, uint64_t& amount);
+    get_total_recieved(const uint64_t& account_id, uint64_t& amount, shared_ptr<mysqlpp::Connection> conn = nullptr);
 };
 
 class MysqlPayments
 {
 public:
     bool
-    select_by_payment_id(const string& payment_id, vector<XmrPayment>& payments);
+    select_by_payment_id(const string& payment_id, vector<XmrPayment>& payments, shared_ptr<mysqlpp::Connection> conn = nullptr);
 };
 
 
@@ -92,15 +92,15 @@ public:
     MySqlAccounts(shared_ptr<CurrentBlockchainStatus> _current_bc_status);
 
     bool
-    select(const string& address, XmrAccount& account);
+    select(const string& address, XmrAccount& account, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     template <typename T>
     uint64_t
-    insert(const T& data_to_insert);
+    insert(const T& data_to_insert, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     template <typename T>
     uint64_t
-    insert(const vector<T>& data_to_insert);
+    insert(const vector<T>& data_to_insert, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     /**
      *
@@ -112,50 +112,50 @@ public:
      */
     template <typename T, size_t query_no = 1>
     bool
-    select(uint64_t account_id, vector<T>& selected_data);
+    select(uint64_t account_id, vector<T>& selected_data, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     template <typename T>
     bool
-    update(T const& orginal_row, T const& new_row);
+    update(T const& orginal_row, T const& new_row, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     template <typename T>
     bool
-    select_for_tx(uint64_t tx_id, vector<T>& selected_data);
+    select_for_tx(uint64_t tx_id, vector<T>& selected_data, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     template <typename T>
     bool
-    select_by_primary_id(uint64_t id, T& selected_data);
+    select_by_primary_id(uint64_t id, T& selected_data, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     bool
     select_txs_for_account_spendability_check(const uint64_t& account_id,
-                                              vector<XmrTransaction>& txs);
+                                              vector<XmrTransaction>& txs, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     bool
-    select_inputs_for_out(const uint64_t& output_id, vector<XmrInput>& ins);
+    select_inputs_for_out(const uint64_t& output_id, vector<XmrInput>& ins, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     bool
-    output_exists(const string& output_public_key_str, XmrOutput& out);
+    output_exists(const string& output_public_key_str, XmrOutput& out, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     bool
-    tx_exists(const uint64_t& account_id, const string& tx_hash_str, XmrTransaction& tx);
+    tx_exists(const uint64_t& account_id, const string& tx_hash_str, XmrTransaction& tx, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     uint64_t
-    mark_tx_spendable(const uint64_t& tx_id_no);
+    mark_tx_spendable(const uint64_t& tx_id_no, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     uint64_t
-    mark_tx_nonspendable(const uint64_t& tx_id_no);
+    mark_tx_nonspendable(const uint64_t& tx_id_no, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     uint64_t
-    delete_tx(const uint64_t& tx_id_no);
+    delete_tx(const uint64_t& tx_id_no, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     bool
-    select_payment_by_id(const string& payment_id, vector<XmrPayment>& payments);
+    select_payment_by_id(const string& payment_id, vector<XmrPayment>& payments, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     bool
-    update_payment(XmrPayment& payment_orginal, XmrPayment& payment_new);
+    update_payment(XmrPayment& payment_orginal, XmrPayment& payment_new, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     bool
-    get_total_recieved(const uint64_t& account_id, uint64_t& amount);
+    get_total_recieved(const uint64_t& account_id, uint64_t& amount, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     /**
      * DONT use!!!

@@ -40,6 +40,12 @@ public:
         clear();
     }
 
+    shared_ptr<mysqlpp::Connection> grab_shared() {
+        return shared_ptr<mysqlpp::Connection>(MySqlConnectionPool::get().grab(), [](mysqlpp::Connection* conn) {
+            MySqlConnectionPool::get().release(conn);
+        });
+    }
+
 protected:
     mysqlpp::Connection* create()
     {
