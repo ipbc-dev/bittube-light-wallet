@@ -15,13 +15,13 @@ namespace xmreg
 
 bool
 MysqlInputs::select_for_out(const uint64_t& output_id,
-                            vector<XmrInput>& ins)
+                            vector<XmrInput>& ins, shared_ptr<mysqlpp::Connection> conn)
 {
     try
     {
-        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
-
-        Query query = cp->query(XmrInput::SELECT_STMT4);
+        // mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
+        if (!conn) conn = MySqlConnectionPool::get().grab_shared();
+        Query query = conn->query(XmrInput::SELECT_STMT4);
         query.parse();
 
         query.storein(ins, output_id);
@@ -38,13 +38,13 @@ MysqlInputs::select_for_out(const uint64_t& output_id,
 }
 
 bool
-MysqlOutpus::exist(const string& output_public_key_str, XmrOutput& out)
+MysqlOutpus::exist(const string& output_public_key_str, XmrOutput& out, shared_ptr<mysqlpp::Connection> conn)
 {
     try
     {
-        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
-
-        Query query = cp->query(XmrOutput::EXIST_STMT);
+        // mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
+        if (!conn) conn = MySqlConnectionPool::get().grab_shared();
+        Query query = conn->query(XmrOutput::EXIST_STMT);
         query.parse();
 
         vector<XmrOutput> outs;
@@ -67,13 +67,13 @@ MysqlOutpus::exist(const string& output_public_key_str, XmrOutput& out)
 }
 
 uint64_t
-MysqlTransactions::mark_spendable(const uint64_t& tx_id_no, bool spendable)
+MysqlTransactions::mark_spendable(const uint64_t& tx_id_no, bool spendable, shared_ptr<mysqlpp::Connection> conn)
 {
     try
     {
-        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
-
-        Query query = cp->query(
+        // mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
+        if (!conn) conn = MySqlConnectionPool::get().grab_shared();
+        Query query = conn->query(
                     spendable ?
                       XmrTransaction::MARK_AS_SPENDABLE_STMT
                                 : XmrTransaction::MARK_AS_NONSPENDABLE_STMT);
@@ -94,13 +94,13 @@ MysqlTransactions::mark_spendable(const uint64_t& tx_id_no, bool spendable)
 }
 
 uint64_t
-MysqlTransactions::delete_tx(const uint64_t& tx_id_no)
+MysqlTransactions::delete_tx(const uint64_t& tx_id_no, shared_ptr<mysqlpp::Connection> conn)
 {
     try
     {
-        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
-
-        Query query = cp->query(XmrTransaction::DELETE_STMT);
+        // mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
+        if (!conn) conn = MySqlConnectionPool::get().grab_shared();
+        Query query = conn->query(XmrTransaction::DELETE_STMT);
         query.parse();
 
         SimpleResult sr = query.execute(tx_id_no);
@@ -119,13 +119,13 @@ MysqlTransactions::delete_tx(const uint64_t& tx_id_no)
 
 bool
 MysqlTransactions::exist(const uint64_t& account_id,
-                         const string& tx_hash_str, XmrTransaction& tx)
+                         const string& tx_hash_str, XmrTransaction& tx, shared_ptr<mysqlpp::Connection> conn)
 {
     try
     {
-        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
-
-        Query query = cp->query(XmrTransaction::EXIST_STMT);
+        // mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
+        if (!conn) conn = MySqlConnectionPool::get().grab_shared();
+        Query query = conn->query(XmrTransaction::EXIST_STMT);
         query.parse();
 
         vector<XmrTransaction> outs;
@@ -150,13 +150,13 @@ MysqlTransactions::exist(const uint64_t& account_id,
 
 bool
 MysqlTransactions::get_total_recieved(const uint64_t& account_id,
-                                      uint64_t& amount)
+                                      uint64_t& amount, shared_ptr<mysqlpp::Connection> conn)
 {
     try
     {
-        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
-
-        Query query = cp->query(XmrTransaction::SUM_XMR_RECIEVED);
+        // mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
+        if (!conn) conn = MySqlConnectionPool::get().grab_shared();
+        Query query = conn->query(XmrTransaction::SUM_XMR_RECIEVED);
         query.parse();
 
         StoreQueryResult sqr = query.store(account_id);
@@ -177,14 +177,14 @@ MysqlTransactions::get_total_recieved(const uint64_t& account_id,
 
 bool
 MysqlPayments::select_by_payment_id(const string& payment_id,
-                                    vector<XmrPayment>& payments)
+                                    vector<XmrPayment>& payments, shared_ptr<mysqlpp::Connection> conn)
 {
 
     try
     {
-        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
-
-        Query query = cp->query(XmrPayment::SELECT_STMT2);
+        // mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
+        if (!conn) conn = MySqlConnectionPool::get().grab_shared();
+        Query query = conn->query(XmrPayment::SELECT_STMT2);
         query.parse();
 
         payments.clear();
@@ -209,13 +209,13 @@ MySqlAccounts::MySqlAccounts(
 }
 
 bool
-MySqlAccounts::select(const string& address, XmrAccount& account)
+MySqlAccounts::select(const string& address, XmrAccount& account, shared_ptr<mysqlpp::Connection> conn)
 {
     try
     {
-        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
-
-        Query query = cp->query(XmrAccount::SELECT_STMT2);
+        // mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
+        if (!conn) conn = MySqlConnectionPool::get().grab_shared();
+        Query query = conn->query(XmrAccount::SELECT_STMT2);
         query.parse();
 
         vector<XmrAccount> res;
@@ -239,13 +239,13 @@ MySqlAccounts::select(const string& address, XmrAccount& account)
 
 template <typename T>
 uint64_t
-MySqlAccounts::insert(const T& data_to_insert)
+MySqlAccounts::insert(const T& data_to_insert, shared_ptr<mysqlpp::Connection> conn)
 {
     try
     {
-        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
-
-        Query query = cp->query();
+        // mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
+        if (!conn) conn = MySqlConnectionPool::get().grab_shared();
+        Query query = conn->query();
 
         query.insert(data_to_insert);
 
@@ -265,26 +265,26 @@ MySqlAccounts::insert(const T& data_to_insert)
 
 // Explicitly instantiate insert template for our tables
 template
-uint64_t MySqlAccounts::insert<XmrAccount>(const XmrAccount& data_to_insert);
+uint64_t MySqlAccounts::insert<XmrAccount>(const XmrAccount& data_to_insert, shared_ptr<mysqlpp::Connection> conn);
 template
 uint64_t MySqlAccounts::insert<XmrTransaction>(
-                    const XmrTransaction& data_to_insert);
+                    const XmrTransaction& data_to_insert, shared_ptr<mysqlpp::Connection> conn);
 template
-uint64_t MySqlAccounts::insert<XmrOutput>(const XmrOutput& data_to_insert);
+uint64_t MySqlAccounts::insert<XmrOutput>(const XmrOutput& data_to_insert, shared_ptr<mysqlpp::Connection> conn);
 template
-uint64_t MySqlAccounts::insert<XmrInput>(const XmrInput& data_to_insert);
+uint64_t MySqlAccounts::insert<XmrInput>(const XmrInput& data_to_insert, shared_ptr<mysqlpp::Connection> conn);
 template
-uint64_t MySqlAccounts::insert<XmrPayment>(const XmrPayment& data_to_insert);
+uint64_t MySqlAccounts::insert<XmrPayment>(const XmrPayment& data_to_insert, shared_ptr<mysqlpp::Connection> conn);
 
 template <typename T>
 uint64_t
-MySqlAccounts::insert(const vector<T>& data_to_insert)
+MySqlAccounts::insert(const vector<T>& data_to_insert, shared_ptr<mysqlpp::Connection> conn)
 {
     try
     {
-        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
-
-        Query query = cp->query();
+        // mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
+        if (!conn) conn = MySqlConnectionPool::get().grab_shared();
+        Query query = conn->query();
 
         query.insert(data_to_insert.begin(), data_to_insert.end());
 
@@ -304,21 +304,21 @@ MySqlAccounts::insert(const vector<T>& data_to_insert)
 // Explicitly instantiate insert template for our tables
 template
 uint64_t MySqlAccounts::insert<XmrOutput>(
-        const vector<XmrOutput>& data_to_insert);
+        const vector<XmrOutput>& data_to_insert, shared_ptr<mysqlpp::Connection> conn);
 
 template
 uint64_t MySqlAccounts::insert<XmrInput>(
-        const vector<XmrInput>& data_to_insert);
+        const vector<XmrInput>& data_to_insert, shared_ptr<mysqlpp::Connection> conn);
 
 template <typename T, size_t query_no>
 bool
-MySqlAccounts::select(uint64_t account_id, vector<T>& selected_data)
+MySqlAccounts::select(uint64_t account_id, vector<T>& selected_data, shared_ptr<mysqlpp::Connection> conn)
 {
     try
     {
-        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
-
-        Query query = cp->query((query_no == 1
+        // mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
+        if (!conn) conn = MySqlConnectionPool::get().grab_shared();
+        Query query = conn->query((query_no == 1
                                    ? T::SELECT_STMT : T::SELECT_STMT2));
         query.parse();
 
@@ -341,44 +341,44 @@ MySqlAccounts::select(uint64_t account_id, vector<T>& selected_data)
 
 template
 bool MySqlAccounts::select<XmrAccount>(uint64_t account_id,
-        vector<XmrAccount>& selected_data);
+        vector<XmrAccount>& selected_data, shared_ptr<mysqlpp::Connection> conn);
 
 template
 bool MySqlAccounts::select<XmrTransaction>(uint64_t account_id,
-        vector<XmrTransaction>& selected_data);
+        vector<XmrTransaction>& selected_data, shared_ptr<mysqlpp::Connection> conn);
 
 template
 bool MySqlAccounts::select<XmrOutput>(uint64_t account_id,
-        vector<XmrOutput>& selected_data);
+        vector<XmrOutput>& selected_data, shared_ptr<mysqlpp::Connection> conn);
 
 template // this will use SELECT_STMT2 which selectes
         // based on transaction id, not account_id,
 bool MySqlAccounts::select<XmrOutput, 2>(uint64_t tx_id,
-        vector<XmrOutput>& selected_data);
+        vector<XmrOutput>& selected_data, shared_ptr<mysqlpp::Connection> conn);
 
 template
 bool MySqlAccounts::select<XmrInput>(uint64_t account_id,
-        vector<XmrInput>& selected_data);
+        vector<XmrInput>& selected_data, shared_ptr<mysqlpp::Connection> conn);
 
 template
 bool MySqlAccounts::select<XmrPayment>(uint64_t account_id,
-        vector<XmrPayment>& selected_data);
+        vector<XmrPayment>& selected_data, shared_ptr<mysqlpp::Connection> conn);
 
 template // this will use SELECT_STMT2 which selectes
          // based on transaction id, not account_id,
 bool MySqlAccounts::select<XmrInput, 2>(uint64_t tx_id,
-        vector<XmrInput>& selected_data);
+        vector<XmrInput>& selected_data, shared_ptr<mysqlpp::Connection> conn);
 
 
 template <typename T>
 bool
-MySqlAccounts::update(T const& orginal_row, T const& new_row)
+MySqlAccounts::update(T const& orginal_row, T const& new_row, shared_ptr<mysqlpp::Connection> conn)
 {
     try
     {
-        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
-
-        Query query = cp->query();
+        // mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
+        if (!conn) conn = MySqlConnectionPool::get().grab_shared();
+        Query query = conn->query();
 
         query.update(orginal_row, new_row);
 
@@ -396,39 +396,39 @@ MySqlAccounts::update(T const& orginal_row, T const& new_row)
 
 template
 bool MySqlAccounts::update<XmrAccount>(
-        XmrAccount const& orginal_row, XmrAccount const& new_row);
+        XmrAccount const& orginal_row, XmrAccount const& new_row, shared_ptr<mysqlpp::Connection> conn);
 
 template
 bool MySqlAccounts::update<XmrPayment>(
-        XmrPayment const& orginal_row, XmrPayment const& new_row);
+        XmrPayment const& orginal_row, XmrPayment const& new_row, shared_ptr<mysqlpp::Connection> conn);
 
 template <typename T>
 bool
-MySqlAccounts::select_for_tx(uint64_t tx_id, vector<T>& selected_data)
+MySqlAccounts::select_for_tx(uint64_t tx_id, vector<T>& selected_data, shared_ptr<mysqlpp::Connection> conn)
 {
-    return select<T, 2>(tx_id, selected_data);
+    return select<T, 2>(tx_id, selected_data, conn);
 }
 
 template // this will use SELECT_STMT2 which selectes based on
          // transaction id, not account_id,
 bool MySqlAccounts::select_for_tx<XmrOutput>(uint64_t tx_id,
-        vector<XmrOutput>& selected_data);
+        vector<XmrOutput>& selected_data, shared_ptr<mysqlpp::Connection> conn);
 
 
 template // this will use SELECT_STMT2 which selectes
          //based on transaction id, not account_id,
 bool MySqlAccounts::select_for_tx<XmrInput>(uint64_t tx_id,
-        vector<XmrInput>& selected_data);
+        vector<XmrInput>& selected_data, shared_ptr<mysqlpp::Connection> conn);
 
 template <typename T>
 bool
-MySqlAccounts::select_by_primary_id(uint64_t id, T& selected_data)
+MySqlAccounts::select_by_primary_id(uint64_t id, T& selected_data, shared_ptr<mysqlpp::Connection> conn)
 {
      try
     {
-        mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
-
-        Query query = cp->query(T::SELECT_STMT3);
+        // mysqlpp::ScopedConnection cp(MySqlConnectionPool::get(), true);
+        if (!conn) conn = MySqlConnectionPool::get().grab_shared();
+        Query query = conn->query(T::SELECT_STMT3);
         query.parse();
 
         vector<T> outs;
@@ -456,19 +456,19 @@ MySqlAccounts::select_by_primary_id(uint64_t id, T& selected_data)
 
 template
 bool MySqlAccounts::select_by_primary_id<XmrInput>(
-        uint64_t id, XmrInput& selected_data);
+        uint64_t id, XmrInput& selected_data, shared_ptr<mysqlpp::Connection> conn);
 
 template
 bool MySqlAccounts::select_by_primary_id<XmrOutput>(
-        uint64_t id, XmrOutput& selected_data);
+        uint64_t id, XmrOutput& selected_data, shared_ptr<mysqlpp::Connection> conn);
 
 template
 bool MySqlAccounts::select_by_primary_id<XmrPayment>(
-        uint64_t id, XmrPayment& selected_data);
+        uint64_t id, XmrPayment& selected_data, shared_ptr<mysqlpp::Connection> conn);
 
 bool
 MySqlAccounts::select_txs_for_account_spendability_check(
-        const uint64_t& account_id, vector<XmrTransaction>& txs)
+        const uint64_t& account_id, vector<XmrTransaction>& txs, shared_ptr<mysqlpp::Connection> conn)
 {
 
     for (auto it = txs.begin(); it != txs.end(); )
@@ -490,7 +490,7 @@ MySqlAccounts::select_txs_for_account_spendability_check(
                 // it is spendable. Meaning, that its older than 10 blocks.
                 // so mark it as spendable in mysql, so that its permanet.
 
-                uint64_t no_row_updated = mark_tx_spendable(tx.id.data);
+                uint64_t no_row_updated = mark_tx_spendable(tx.id.data, conn);
 
                 if (no_row_updated != 1)
                 {
@@ -519,7 +519,7 @@ MySqlAccounts::select_txs_for_account_spendability_check(
                     // changed
                     // for example, it was orhpaned, and then readded.
 
-                    uint64_t no_row_updated = delete_tx(tx.id.data);
+                    uint64_t no_row_updated = delete_tx(tx.id.data, conn);
 
                     if (no_row_updated != 1)
                     {
@@ -562,55 +562,55 @@ MySqlAccounts::select_txs_for_account_spendability_check(
 
 bool
 MySqlAccounts::select_inputs_for_out(const uint64_t& output_id,
-                                     vector<XmrInput>& ins)
+                                     vector<XmrInput>& ins, shared_ptr<mysqlpp::Connection> conn)
 {
-    return mysql_in->select_for_out(output_id, ins);
+    return mysql_in->select_for_out(output_id, ins, conn);
 }
 
 bool
 MySqlAccounts::output_exists(const string& output_public_key_str,
-                             XmrOutput& out)
+                             XmrOutput& out, shared_ptr<mysqlpp::Connection> conn)
 {
-    return mysql_out->exist(output_public_key_str, out);
+    return mysql_out->exist(output_public_key_str, out, conn);
 }
 
 bool
 MySqlAccounts::tx_exists(const uint64_t& account_id,
-                         const string& tx_hash_str, XmrTransaction& tx)
+                         const string& tx_hash_str, XmrTransaction& tx, shared_ptr<mysqlpp::Connection> conn)
 {
-    return mysql_tx->exist(account_id, tx_hash_str, tx);
+    return mysql_tx->exist(account_id, tx_hash_str, tx, conn);
 }
 
 uint64_t
-MySqlAccounts::mark_tx_spendable(const uint64_t& tx_id_no)
+MySqlAccounts::mark_tx_spendable(const uint64_t& tx_id_no, shared_ptr<mysqlpp::Connection> conn)
 {
-    return mysql_tx->mark_spendable(tx_id_no);
+    return mysql_tx->mark_spendable(tx_id_no, true, conn);
 }
 
 uint64_t
-MySqlAccounts::mark_tx_nonspendable(const uint64_t& tx_id_no)
+MySqlAccounts::mark_tx_nonspendable(const uint64_t& tx_id_no, shared_ptr<mysqlpp::Connection> conn)
 {
-    return mysql_tx->mark_spendable(tx_id_no, false);
+    return mysql_tx->mark_spendable(tx_id_no, false, conn);
 }
 
 uint64_t
-MySqlAccounts::delete_tx(const uint64_t& tx_id_no)
+MySqlAccounts::delete_tx(const uint64_t& tx_id_no, shared_ptr<mysqlpp::Connection> conn)
 {
-    return mysql_tx->delete_tx(tx_id_no);
+    return mysql_tx->delete_tx(tx_id_no, conn);
 }
 
 bool
 MySqlAccounts::select_payment_by_id(const string& payment_id,
-                                    vector<XmrPayment>& payments)
+                                    vector<XmrPayment>& payments, shared_ptr<mysqlpp::Connection> conn)
 {
-    return mysql_payment->select_by_payment_id(payment_id, payments);
+    return mysql_payment->select_by_payment_id(payment_id, payments, conn);
 }
 
 bool
 MySqlAccounts::get_total_recieved(const uint64_t& account_id,
-                                  uint64_t& amount)
+                                  uint64_t& amount, shared_ptr<mysqlpp::Connection> conn)
 {
-    return mysql_tx->get_total_recieved(account_id, amount);
+    return mysql_tx->get_total_recieved(account_id, amount, conn);
 }
 
 void

@@ -173,7 +173,7 @@ public:
     set_search_thread_life(seconds life_seconds);
 
     virtual bool
-    delete_existing_tx_if_exists(string const& tx_hash);
+    delete_existing_tx_if_exists(string const& tx_hash, shared_ptr<mysqlpp::Connection> conn = nullptr);
 
     virtual ~TxSearch();
 
