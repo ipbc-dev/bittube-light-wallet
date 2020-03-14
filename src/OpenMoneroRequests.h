@@ -27,11 +27,11 @@
 // whether they can talk to a given backend without having to know in
 // advance which version they will stop working with
 // Don't go over 32767 for any of these
-#define OPENMONERO_RPC_VERSION_MAJOR 1
-#define OPENMONERO_RPC_VERSION_MINOR 6
-#define MAKE_OPENMONERO_RPC_VERSION(major,minor) (((major)<<16)|(minor))
-#define OPENMONERO_RPC_VERSION \
-    MAKE_OPENMONERO_RPC_VERSION(OPENMONERO_RPC_VERSION_MAJOR, OPENMONERO_RPC_VERSION_MINOR)
+#define OPENBITTUBE_RPC_VERSION_MAJOR 1
+#define OPENBITTUBE_RPC_VERSION_MINOR 6
+#define MAKE_OPENBITTUBE_RPC_VERSION(major,minor) (((major)<<16)|(minor))
+#define OPENBITTUBE_RPC_VERSION \
+    MAKE_OPENBITTUBE_RPC_VERSION(OPENBITTUBE_RPC_VERSION_MAJOR, OPENBITTUBE_RPC_VERSION_MINOR)
 
 
 namespace xmreg

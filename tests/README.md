@@ -1,30 +1,30 @@
-## Testing openmonero
+## Testing bittube
 
 [Googletest](https://github.com/google/googletest) and
 [googlemock](https://github.com/google/googletest/tree/master/googlemock)
-frameworks are used for unit testing of openmonero. There is no need
-to install them, as they are provided with openmonero.
+frameworks are used for unit testing of bittube. There is no need
+to install them, as they are provided with bittube.
 
 ### MySQL setup
 
-Testing openmonero's operations on MySQL database are performed using
+Testing bittube's operations on MySQL database are performed using
 actuall mysql database. For this purpose a testing database with
-some pre-populated data is used: `openmonero_test`. Thus before
-tests are run, make sure that `openmonero_test` database is initilized
-using `openmonero/sql/openmonero_test.sql` file, and `database_test` contains
+some pre-populated data is used: `bittube_test`. Thus before
+tests are run, make sure that `bittube_test` database is initilized
+using `bittube/sql/bittube_test.sql` file, and `database_test` contains
 information on conneting to the test database in
-`openmonero/config/config.json`.
+`bittube/config/config.json`.
 
-### Compile and run openmonero  tests
+### Compile and run bittube  tests
 
 ```bash
-# go into build folder of openmonero
-cd openmonero/build
+# go into build folder of bittube
+cd bittube/build
 
 # indicate that test should be build
 cmake -DBUILD_TESTS=ON ..
 
-# compile openmonero with tests
+# compile bittube with tests
 make
 
 # run all tests
@@ -35,7 +35,7 @@ make test
 # make test ARGS=-V
 
 # individual tests executables can also be run. they are located in
-# openmonero/build/tests
+# bittube/build/tests
 
 ```
 
@@ -44,7 +44,7 @@ Example test output is:
 ```bash
 mwo@arch:build$ make test
 Running tests...
-Test project /home/mwo/openmonero/build
+Test project /home/mwo/bittube/build
     Start 1: mysql_tests
 1/4 Test #1: mysql_tests ......................   Passed   60.64 sec
     Start 2: microcore_tests

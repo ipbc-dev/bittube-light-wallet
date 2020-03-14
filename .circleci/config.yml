@@ -21,8 +21,8 @@ jobs:
       - run:
           name: Get Last monero commit hash 
           command: |
-              export MONERO_COMMIT=`git ls-remote https://github.com/monero-project/monero HEAD | head -n1 | awk '{print $1;}'`
-              echo $MONERO_COMMIT > ~/monerocommit
+              export BITTUBE_COMMIT=`git ls-remote https://github.com/monero-project/monero HEAD | head -n1 | awk '{print $1;}'`
+              echo $BITTUBE_COMMIT > ~/monerocommit
               cat ~/monerocommit
       - restore_cache:
           key: v01-monero-{{ checksum "~/monerocommit" }}
@@ -47,7 +47,7 @@ jobs:
               git submodule update --init --recursive
       - run:
           name: Creating Build Files 
-          command: 'cmake -DMONERO_DIR=/root/project/monero -DBUILD_TESTS=ON -H. -Bbuild'
+          command: 'cmake -DBITTUBE_DIR=/root/project/monero -DBUILD_TESTS=ON -H. -Bbuild'
       - run:
           name: Creating Binary Files
           command: 'cmake --build build -- -j 2'

@@ -2,8 +2,8 @@
 // Created by mwo on 10/07/18.
 //
 
-#ifndef OPENMONERO_BLOCKCHAINSETUP_H
-#define OPENMONERO_BLOCKCHAINSETUP_H
+#ifndef OPENBITTUBE_BLOCKCHAINSETUP_H
+#define OPENBITTUBE_BLOCKCHAINSETUP_H
 
 #include "src/monero_headers.h"
 #include "utils.h"
@@ -88,4 +88,4 @@ private:
 }
 
 
-#endif //OPENMONERO_BLOCKCHAINSETUP_H
+#endif //OPENBITTUBE_BLOCKCHAINSETUP_H

@@ -6,8 +6,8 @@
 #include "src/UniversalIdentifier.hpp"
 
 
-#undef MONERO_DEFAULT_LOG_CATEGORY
-#define MONERO_DEFAULT_LOG_CATEGORY "openmonero"
+#undef BITTUBE_DEFAULT_LOG_CATEGORY
+#define BITTUBE_DEFAULT_LOG_CATEGORY "bittube"
 
 namespace xmreg
 {
@@ -98,7 +98,7 @@ CurrentBlockchainStatus::update_current_blockchain_height()
     // This rpc call not only gets the blockchain height
     // but it also serves as a "ping" into the Monero
     // deamon to keep the connection between the
-    // openmonero backend and the deamon alive
+    // bittube backend and the deamon alive
     if (rpc->get_current_height(tmp))
     {
         current_height = tmp - 1;

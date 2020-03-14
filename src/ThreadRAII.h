@@ -2,8 +2,8 @@
 // Created by mwo on 11/07/18.
 //
 
-#ifndef OPENMONERO_THREADRAII_H
-#define OPENMONERO_THREADRAII_H
+#ifndef OPENBITTUBE_THREADRAII_H
+#define OPENBITTUBE_THREADRAII_H
 
 #include <thread>
 #include <iostream>
@@ -50,4 +50,4 @@ protected:
 
 }
 
-#endif //OPENMONERO_THREADRAII_H
+#endif //OPENBITTUBE_THREADRAII_H

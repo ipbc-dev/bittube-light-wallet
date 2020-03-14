@@ -2,8 +2,8 @@
 // Created by mwo on 12/07/18.
 //
 
-#ifndef OPENMONERO_MYSQLPING_H
-#define OPENMONERO_MYSQLPING_H
+#ifndef OPENBITTUBE_MYSQLPING_H
+#define OPENBITTUBE_MYSQLPING_H
 
 #include "MySqlConnector.h"
 
@@ -48,4 +48,4 @@ private:
 };
 }
 
-#endif //OPENMONERO_MYSQLPING_H
+#endif //OPENBITTUBE_MYSQLPING_H

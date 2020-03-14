@@ -14,7 +14,7 @@ import aiohttp
 import monero
 
 
-# openmonero backend url
+# bittube backend url
 om_url = "http://127.0.0.1:1984/"
 #om_url = "http://139.162.60.17:1984/"
 

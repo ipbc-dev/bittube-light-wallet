@@ -145,7 +145,7 @@ TEST(MYSQL_CONNECTION, CanConnect)
 
 
 /**
-* Fixture that connects to openmonero_test database
+* Fixture that connects to bittube_test database
 * and repopulates it with known data for each test.
 */
 class MYSQL_TEST : public ::testing::Test
@@ -167,7 +167,7 @@ public:
         xmreg::MySqlConnector::password = db_config["password"];
         xmreg::MySqlConnector::dbname = db_config["dbname"];
 
-        db_data = xmreg::read("../sql/openmonero_test.sql");
+        db_data = xmreg::read("../sql/bittube_test.sql");
     }
 
 protected:

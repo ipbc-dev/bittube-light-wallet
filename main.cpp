@@ -26,7 +26,7 @@ public:
     {
         std::lock_guard<std::mutex> lk(m);
         s_shouldExit = true;
-        OMINFO << "Request to finish the openmonero received";
+        OMINFO << "Request to finish the bittube received";
         cv.notify_one();
     }
 
@@ -89,7 +89,7 @@ defaultConf.setToDefault();
 
 if (!log_file.empty())
 {
-    // setup openmonero log file
+    // setup bittube log file
     defaultConf.setGlobally(el::ConfigurationType::Filename, log_file);
     defaultConf.setGlobally(el::ConfigurationType::ToFile, "true");
 }
@@ -104,7 +104,7 @@ defaultConf.setGlobally(el::ConfigurationType::Format,
 
 el::Loggers::setVerboseLevel(verbose_level);
 
-el::Loggers::reconfigureLogger(OPENMONERO_LOG_CATEGORY, defaultConf);
+el::Loggers::reconfigureLogger(OPENBITTUBE_LOG_CATEGORY, defaultConf);
 
 OMINFO << "OpenMonero is starting";
 

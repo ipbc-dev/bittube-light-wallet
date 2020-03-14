@@ -32,7 +32,7 @@ public:
     // the two structures are here to make get_random_outs
     // method work as before. Normally, the used to be defined
     // in monero, but due to recent changes in 2018 09,
-    // they were removed. However, parts of openmonero
+    // they were removed. However, parts of bittube
     // require them.
     struct out_entry
     {

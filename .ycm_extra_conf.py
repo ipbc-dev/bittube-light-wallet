@@ -44,8 +44,8 @@ flags = [
     '-I/home/mwo2/monero/external/db_drivers/liblmdb',
     '-I/home/mwo2/monero/external/easylogging++',
     '-I/home/mwo2/monero/src',
-    '-I/home/mwo2/openmonero/ext/restbed/source',
-    '-I/home/mwo2/openmonero/src/xmregcore',
+    '-I/home/mwo2/bittube/ext/restbed/source',
+    '-I/home/mwo2/bittube/src/xmregcore',
     '-I/usr/include/mysql',
     '-I/usr/local/include',
     '-I/usr/local/include/mysql',
@@ -56,8 +56,8 @@ flags = [
     '-Wno-unknown-pragmas',
     '-std=c++14',
     '-std=gnu++14',
-    '-isystem', '/home/mwo2/openmonero/ext/restbed/dependency/asio/asio/include',
-    '-isystem', '/home/mwo2/openmonero/ext/restbed/dependency/kashmir',
+    '-isystem', '/home/mwo2/bittube/ext/restbed/dependency/asio/asio/include',
+    '-isystem', '/home/mwo2/bittube/ext/restbed/dependency/kashmir',
 ]
 
 

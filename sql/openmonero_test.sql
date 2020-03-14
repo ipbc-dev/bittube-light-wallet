@@ -20,11 +20,11 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `openmonero_test`
+-- Database: `bittube_test`
 --
 
-CREATE DATABASE IF NOT EXISTS `openmonero_test` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
-USE `openmonero_test`;
+CREATE DATABASE IF NOT EXISTS `bittube_test` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+USE `bittube_test`;
 
 -- --------------------------------------------------------
 
