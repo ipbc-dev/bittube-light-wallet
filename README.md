@@ -29,7 +29,8 @@ to MyMonero. They include:
 
 ## Live stagenet version
 
-- [http://139.162.60.17:81](http://139.162.60.17:81)
+- [http://139.162.60.17:81](http://139.162.60.17:81) - down for now.
+- [http://139.162.60.17:8100](http://139.162.60.17:8100) - MyMonero frontend - down for now.
 
 This is OpenMonero running on stagnet network. You can use it to play around with it.
 Please note that the live version is running on cheap VPS, which may result in
@@ -39,12 +40,12 @@ performance issues.
 ## Current development version
 
 All current changes, bug fixes and updates are done in the
-[branch](https://github.com/moneroexamples/openmonero/tree/devel).
+[branch](https://github.com/moneroexamples/bittube/tree/devel).
 
 
 ## Screenshot
 
-![Open Monero](https://raw.githubusercontent.com/moneroexamples/openmonero/master/screenshot/screen1.png)
+![Open Monero](https://raw.githubusercontent.com/moneroexamples/bittube/master/screenshot/screen1.png)
 
 
 ## Host it yourself
@@ -106,15 +107,16 @@ sudo apt install libmysql++-dev
 # go to home folder if still in ~/monero
 cd ~
 
-git clone https://github.com/moneroexamples/openmonero.git
+# download the source code of the devel branch
+git clone --recursive https://github.com/moneroexamples/bittube.git
 
-cd openmonero
+cd bittube
 
 mkdir build && cd build
 
 cmake ..
 
-# altearnatively can use cmake -DMONERO_DIR=/path/to/monero_folder ..
+# altearnatively can use cmake -DBITTUBE_DIR=/path/to/monero_folder ..
 # if monero is not in ~/monero
 
 make
@@ -130,15 +132,15 @@ Create mariadb container called `ommariadb` and root password of `root` (change 
 docker run --name ommariadb -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -d mariadb
 ```
 
-Create openmonero database called `openmonero`.
+Create bittube database called `bittube`.
 
 ```
-cd openmonero/sql
-docker exec -i ommariadb mysql -uroot -proot < openmonero.sql
+cd bittube/sql
+docker exec -i ommariadb mysql -uroot -proot < bittube.sql
 ```
 
 #### PhpMyAdmin (using docker)
-A good way to manage/view the openmonero database is through the
+A good way to manage/view the bittube database is through the
 [PhpMyAdmin in docker](https://hub.docker.com/r/phpmyadmin/phpmyadmin/). Using docker,
 this can be done:
 
@@ -157,11 +159,11 @@ The fastest way to start up and server the frontend is through
 [nginx docker image](https://hub.docker.com/_/nginx/).
 
 ```
-docker run --name omhtml -p 80:80 -v /home/mwo/openmonero/html:/usr/share/nginx/html:ro -d nginx
+docker run --name omhtml -p 80:80 -v /home/mwo/bittube/html:/usr/share/nginx/html:ro -d nginx
 ```
 
 where `omhtml` is docker container name, `80:80` will expose the frontend
-on port 80 of the localhost, and `/home/mwo/openmonero/html` is the location on your host computer where the
+on port 80 of the localhost, and `/home/mwo/bittube/html` is the location on your host computer where the
 frontend files are stored. All these can be changed to suit your requirements.
 
 Go to localhost (http://127.0.0.1) and check if frontend is working.
@@ -176,7 +178,7 @@ They are used by [send_coins.js](https://mymonero.com/js/controllers/send_coins.
 transaction generation functionality.
 
 OpenMonero provides these files here: `./html/js/lib`. They were generated using forked  `mymonero-core-js` repo:
-https://github.com/moneroexamples/mymonero-core-js/tree/openmonero
+https://github.com/moneroexamples/mymonero-core-js/tree/bittube
 
 However, you can compile them yourself using the orginal repository located at
 https://github.com/mymonero/mymonero-core-js.
@@ -205,7 +207,7 @@ source ~/emsdk/emsdk_env.sh
 # compile mymonero-core-js
 ./bin/build-emcpp.sh
 
-# generate mymonero-core.js
+# generate mymonero-core.js and MyMoneroCoreCpp_WASM.wasm 
 ./bin/package_browser_js
 
 ```
@@ -221,22 +223,27 @@ be used in place the files bundled with OpenMonero.
 Command line options
 
 ```bash
-./openmonero -h
+./bittube -h
+bittube, Open Monero backend service:
   -h [ --help ] [=arg(=1)] (=0)         produce help message
   -t [ --testnet ] [=arg(=1)] (=0)      use testnet blockchain
   -s [ --stagenet ] [=arg(=1)] (=0)     use stagenet blockchain
-  --do-not-relay [=arg(=1)] (=0)        does not relay txs to other nodes.
-                                        useful when testing construction and
+  --do-not-relay [=arg(=1)] (=0)        does not relay txs to other nodes. 
+                                        useful when testing construction and 
                                         submiting txs
-  -p [ --port ] arg (=1984)             default port for restbed service of
+  -p [ --port ] arg (=1984)             default port for restbed service of 
                                         Open Monero
   -c [ --config-file ] arg (=./config/config.json)
                                         Config file path.
+  -m [ --monero-log-level ] arg (=1)    Monero log level 1-4, default is 1.
+  -l [ --log-file ] arg (=./bittube.log)
+                                        Name and path to log file. -l "" to 
+                                        disable log file.
 ```
 
 Other backend options are in `confing/config.json`.
 
-Before running `openmonero`:
+Before running `bittube`:
 
  - edit `config/config.js` file with your settings. Especially set `frontend-url` and `database`
  connection details.
@@ -249,29 +256,29 @@ Before running `openmonero`:
 
 To start for mainnet:
 ```bash
-./openmonero
+./bittube
 ```
 
 To start for testnet:
 ```bash
-./openmonero -t
+./bittube -t
 ```
 
 To start for stagenet:
 ```bash
-./openmonero -s
+./bittube -s
 ```
 
 To start for stagenet with non-default location of `config.json` file:
 
 ```bash
-./openmonero -s -c /path/to/config.json
+./bittube -s -c /path/to/config.json
 ```
 
 
 ## OpenMonero JSON REST API
 
-Example JSON REST requests and their responses of [OpenMonero](https://github.com/moneroexamples/openmonero) are provided below. The long term goal
+Example JSON REST requests and their responses of [OpenMonero](https://github.com/moneroexamples/bittube) are provided below. The long term goal
 is to make the api conform to [jsent](https://labs.omniti.com/labs/jsend)
 specification which describs successful, failed and error responses. At present,
 the OpenMonero api does not fully conform to that.
@@ -309,17 +316,29 @@ var api_minor = response.data.api & 0xffff;
 
 ### login
 
-Login an existing or new user into OpenMonero.
+Login an existing or a new user into OpenMonero.
 
 ```bash
-curl  -w "\n" -X POST http://127.0.0.1:1984/login -d '{"address": "A2VTvE8bC9APsWFn3mQzgW8Xfcy2SP2CRUArD6ZtthNaWDuuvyhtBcZ8WDuYMRt1HhcnNQvpXVUavEiZ9waTbyBhP6RM8TV", "view_key": "041a241325326f9d86519b714a9b7f78b29111551757eeb6334d39c21f8b7400"}'
+curl  -w "\n" -X POST http://127.0.0.1:1984/login -d '{"address": "A2VTvE8bC9APsWFn3mQzgW8Xfcy2SP2CRUArD6ZtthNaWDuuvyhtBcZ8WDuYMRt1HhcnNQvpXVUavEiZ9waTbyBhP6RM8TV", "view_key": "041a241325326f9d86519b714a9b7f78b29111551757eeb6334d39c21f8b7400", "create_account": true, "generated_locally": true}'
 ```
 
+Example output:
 ```json
-{"new_address":false,"status":"success"}
+{"generated_locally":false,"new_address":true,"start_height":0,"status":"success"}
 ```
 
+### ping 
 
+Pings a search thread for a given account to extend its life.
+
+```bash
+curl  -w "\n" -X POST http://127.0.0.1:1984/ping -d '{"address": "A2VTvE8bC9APsWFn3mQzgW8Xfcy2SP2CRUArD6ZtthNaWDuuvyhtBcZ8WDuYMRt1HhcnNQvpXVUavEiZ9waTbyBhP6RM8TV", "view_key": "041a241325326f9d86519b714a9b7f78b29111551757eeb6334d39c21f8b7400"}'
+```
+
+Example output:
+```json
+{"generated_locally":false,"new_address":true,"start_height":0,"status":"success"}
+```
 #### get_address_txs
 
 Get the list of all txs for the given user with their possible spendings.

@@ -76,18 +76,25 @@ thinwalletServices
                 } catch (e) {
                     return deferred.reject("invalid address");
                 }
-                var expected_view_pub = cnUtil.sec_key_to_pub(view_key);
-                var expected_spend_pub;
-                if (spend_key.length === 64) {
-                    expected_spend_pub = cnUtil.sec_key_to_pub(spend_key);
-                }
-                if (public_keys.view !== expected_view_pub) {
-                    accountService.logout();
-                    return deferred.reject("invalid view key");
-                }
-                if (!view_only && (public_keys.spend !== expected_spend_pub)) {
-                    accountService.logout();
-                    return deferred.reject("invalid spend key");
+
+                if (!cnUtil.is_subaddress(address))
+                {
+                    var expected_view_pub = cnUtil.sec_key_to_pub(view_key);
+                    var expected_spend_pub;
+                    if (spend_key.length === 64) {
+                        expected_spend_pub = cnUtil.sec_key_to_pub(spend_key);
+                    }
+
+
+
+                    if (public_keys.view !== expected_view_pub) {
+                        accountService.logout();
+                        return deferred.reject("invalid view key");
+                    }
+                    if (!view_only && (public_keys.spend !== expected_spend_pub)) {
+                        accountService.logout();
+                        return deferred.reject("invalid spend key");
+                    }
                 }
                 public_address = address;
                 private_keys = {
@@ -108,7 +115,7 @@ thinwalletServices
                 logged_in = true;
                 // console.log("logged_in = true;");
 
-                ApiCalls.login(public_address, view_key)
+                ApiCalls.login(public_address, view_key, generated_account)
                     .then(function(response) {
                         // set account_imported to true if we are not logging in with a newly generated account, and a new account was created on the server
 

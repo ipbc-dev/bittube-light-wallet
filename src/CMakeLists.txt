@@ -1,10 +1,8 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.10)
 
-project(myxrm)
+project(myxmr)
 
 set(SOURCE_FILES
-		MicroCore.cpp
-		tools.cpp
 		CmdLineOptions.cpp
 		CurrentBlockchainStatus.cpp
         db/MySqlConnectionPool.cpp
@@ -12,18 +10,24 @@ set(SOURCE_FILES
         db/ssqlses.cpp
 		OpenMoneroRequests.cpp
 		TxSearch.cpp
-                RPCCalls.cpp
-		OutputInputIdentification.cpp
-		version.h.in
+        RPCCalls.cpp
+		omversion.h.in
 		BlockchainSetup.cpp
 		ThreadRAII.cpp
-                TxUnlockChecker.cpp
-                UniversalIdentifier.cpp
-                RandomOutputs.cpp)
+        TxUnlockChecker.cpp
+        utils.cpp
+        RandomOutputs.cpp)
 
-# make static library called libmyxrm
-# that we are going to link to
-# in the root CMakeLists.txt file
-add_library(myxrm
-		STATIC
-		${SOURCE_FILES})
+add_library(myxmr STATIC
+    ${SOURCE_FILES})
+
+target_link_libraries(myxmr 
+    PUBLIC
+    XMREG::core 
+    ${restbed_LIBRARY}
+    ${MYSQLPP_LIBRARIES})
+
+target_include_directories(myxmr 
+    PUBLIC
+    ${restbed_INCLUDE}
+    ${MYSQLPP_INCLUDE_DIRS})

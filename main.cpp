@@ -3,7 +3,6 @@
 #include "src/MicroCore.h"
 #include "src/OpenMoneroRequests.h"
 #include "src/ThreadRAII.h"
-#include "src/TxSearch.h"
 
 #include <iostream>
 #include <memory>
@@ -26,7 +25,7 @@ public:
     {
         std::lock_guard<std::mutex> lk(m);
         s_shouldExit = true;
-        OMINFO << "Request to finish the openmonero received";
+        OMINFO << "Request to finish the bittube received";
         cv.notify_one();
     }
 
@@ -60,9 +59,18 @@ if (*help_opt)
 auto monero_log_level  =
         *(opts.get_option<size_t>("monero-log-level"));
 
+auto verbose_level = 
+        *(opts.get_option<size_t>("verbose"));
+
 if (monero_log_level < 1 || monero_log_level > 4)
 {
     cerr << "monero-log-level,m option must be between 1 and 4!\n";
+    return EXIT_SUCCESS;
+}
+
+if (verbose_level < 0 || verbose_level > 4)
+{
+    cerr << "verbose,v option must be between 0 and 4!\n";
     return EXIT_SUCCESS;
 }
 
@@ -80,7 +88,7 @@ defaultConf.setToDefault();
 
 if (!log_file.empty())
 {
-    // setup openmonero log file
+    // setup bittube log file
     defaultConf.setGlobally(el::ConfigurationType::Filename, log_file);
     defaultConf.setGlobally(el::ConfigurationType::ToFile, "true");
 }
@@ -93,9 +101,14 @@ defaultConf.setGlobally(el::ConfigurationType::Format,
                         "%datetime [%levshort,%logger,%fbase:%func:%line]"
                         " %msg");
 
-el::Loggers::reconfigureLogger(OPENMONERO_LOG_CATEGORY, defaultConf);
+el::Loggers::setVerboseLevel(verbose_level);
+
+el::Loggers::reconfigureLogger(OPENBITTUBE_LOG_CATEGORY, defaultConf);
 
 OMINFO << "OpenMonero is starting";
+
+if (verbose_level > 0)
+    OMINFO << "Using verbose log level to: " << verbose_level;
 
 auto do_not_relay_opt = opts.get_option<bool>("do-not-relay");
 auto testnet_opt      = opts.get_option<bool>("testnet");
@@ -139,6 +152,22 @@ xmreg::MySqlConnectionPool::username  = config_json["database"]["user"];
 xmreg::MySqlConnectionPool::password  = config_json["database"]["password"];
 xmreg::MySqlConnectionPool::dbname    = config_json["database"]["dbname"];
 
+// number of thread in blockchain access pool thread
+auto threads_no = std::max<uint32_t>(
+        std::thread::hardware_concurrency()/2, 2u) - 1;
+
+if (bc_setup.blockchain_treadpool_size > 0)
+    threads_no = bc_setup.blockchain_treadpool_size;
+
+if (threads_no > 100)
+{
+    threads_no = 100;
+    OMWARN << "Requested Thread Pool size " 
+        << threads_no << " is greater than 100!."
+            " Overwriting to 100!" ;
+}
+
+OMINFO << "Thread pool size: " << threads_no << " threads";
 
 // once we have all the parameters for the blockchain and our backend
 // we can create and instance of CurrentBlockchainStatus class.
@@ -150,7 +179,8 @@ auto current_bc_status
         = make_shared<xmreg::CurrentBlockchainStatus>(
             bc_setup,
             std::make_unique<xmreg::MicroCore>(),
-            std::make_unique<xmreg::RPCCalls>(bc_setup.deamon_url));
+            std::make_unique<xmreg::RPCCalls>(bc_setup.deamon_url),
+            std::make_unique<TP::ThreadPool>(threads_no));
 
 // since CurrentBlockchainStatus class monitors current status
 // of the blockchain (e.g., current height) .This is the only class
@@ -181,6 +211,7 @@ shared_ptr<xmreg::MySqlAccounts> mysql_accounts;
 
 try
 {
+    // MySqlAccounts will try connecting to the mysql database
     mysql_accounts = make_shared<xmreg::MySqlAccounts>(current_bc_status);
     mysqlpp::ScopedConnection cp(xmreg::MySqlConnectionPool::get(), true);
     if (!cp) throw std::runtime_error("No connection to the mysqldb");
@@ -194,26 +225,12 @@ catch(std::exception const& e)
     return EXIT_FAILURE;
 }
 
-bool stop_io_service = false;
-std::thread io_service_thread([&stop_io_service, &current_bc_status]() {
-    while (!stop_io_service) {
-        xmreg::getIOService().run();
-        xmreg::getIOService().reset();
-        std::this_thread::sleep_for(std::chrono::seconds(current_bc_status->get_bc_setup().refresh_block_status_every));
-    }
-});
-
-OMINFO << "ASIO IO service thread started";
-
-xmreg::getTxSearchPool();
-
-OMINFO << "TxSearch thread pool started";
-
 // create REST JSON API services
 xmreg::OpenMoneroRequests open_monero(mysql_accounts, current_bc_status);
 
 // create Open Monero APIs
 MAKE_RESOURCE(login);
+MAKE_RESOURCE(ping);
 MAKE_RESOURCE(get_address_txs);
 MAKE_RESOURCE(get_address_info);
 MAKE_RESOURCE(get_unspent_outs);
@@ -222,13 +239,14 @@ MAKE_RESOURCE(submit_raw_tx);
 MAKE_RESOURCE(import_wallet_request);
 MAKE_RESOURCE(import_recent_wallet_request);
 MAKE_RESOURCE(get_tx);
-MAKE_GP_RESOURCE(get_version);
+MAKE_RESOURCE(get_version);
 
 // restbed service
 Service service;
 
 // Publish the Open Monero API created so that front end can use it
 service.publish(login);
+service.publish(ping);
 service.publish(get_address_txs);
 service.publish(get_address_info);
 service.publish(get_unspent_outs);
@@ -313,13 +331,6 @@ restbed_service.join();
 OMINFO << "Stopping blockchain_monitoring_thread. Please wait.";
 current_bc_status->stop();
 blockchain_monitoring_thread.join();
-
-OMINFO << "Stopping TxSearch thread pool. Please wait.";
-xmreg::getTxSearchPool().stop();
-
-OMINFO << "Stopping ASIO IO service thread. Please wait.";
-stop_io_service = true;
-io_service_thread.join();
 
 OMINFO << "All done. Bye.";
 

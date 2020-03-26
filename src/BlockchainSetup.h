@@ -2,11 +2,11 @@
 // Created by mwo on 10/07/18.
 //
 
-#ifndef OPENMONERO_BLOCKCHAINSETUP_H
-#define OPENMONERO_BLOCKCHAINSETUP_H
+#ifndef OPENBITTUBE_BLOCKCHAINSETUP_H
+#define OPENBITTUBE_BLOCKCHAINSETUP_H
 
-#include "monero_headers.h"
-#include "tools.h"
+#include "src/monero_headers.h"
+#include "utils.h"
 
 #include <string>
 
@@ -49,6 +49,8 @@ public:
 
     uint64_t max_number_of_blocks_to_import {132000};
 
+    uint64_t blockchain_treadpool_size {0};
+
     string   import_payment_address_str;
     string   import_payment_viewkey_str;
 
@@ -86,4 +88,4 @@ private:
 }
 
 
-#endif //OPENMONERO_BLOCKCHAINSETUP_H
+#endif //OPENBITTUBE_BLOCKCHAINSETUP_H

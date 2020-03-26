@@ -18,7 +18,7 @@
     "_comment" : "how should the backend connect to the mysql database",
     "url"      : "127.0.0.1",
     "port"     : 3306,
-    "dbname"   : "openmonero",
+    "dbname"   : "bittube",
     "user"     : "root",
     "password" : "root"
   },
@@ -27,7 +27,7 @@
     "_comment" : "how should the backend connect to the test mysql database",
     "url"      : "127.0.0.1",
     "port"     : 3306,
-    "dbname"   : "openmonero_test",
+    "dbname"   : "bittube_test",
     "user"     : "root",
     "password" : "root"
   },

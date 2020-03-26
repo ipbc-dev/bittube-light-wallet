@@ -8,12 +8,8 @@
 #include <iostream>
 #include <functional>
 
-
-#include "version.h"
-
 #include "CurrentBlockchainStatus.h"
 #include "db/MySqlAccounts.h"
-#include "../gen/version.h"
 
 #include "../ext/restbed/source/restbed"
 
@@ -35,11 +31,11 @@
 // whether they can talk to a given backend without having to know in
 // advance which version they will stop working with
 // Don't go over 32767 for any of these
-#define OPENMONERO_RPC_VERSION_MAJOR 1
-#define OPENMONERO_RPC_VERSION_MINOR 3
-#define MAKE_OPENMONERO_RPC_VERSION(major,minor) (((major)<<16)|(minor))
-#define OPENMONERO_RPC_VERSION \
-    MAKE_OPENMONERO_RPC_VERSION(OPENMONERO_RPC_VERSION_MAJOR, OPENMONERO_RPC_VERSION_MINOR)
+#define OPENBITTUBE_RPC_VERSION_MAJOR 1
+#define OPENBITTUBE_RPC_VERSION_MINOR 6
+#define MAKE_OPENBITTUBE_RPC_VERSION(major,minor) (((major)<<16)|(minor))
+#define OPENBITTUBE_RPC_VERSION \
+    MAKE_OPENBITTUBE_RPC_VERSION(OPENBITTUBE_RPC_VERSION_MAJOR, OPENBITTUBE_RPC_VERSION_MINOR)
 
 
 namespace xmreg
@@ -89,6 +85,9 @@ public:
      */
     void
     login(const shared_ptr<Session> session, const Bytes & body);
+    
+    void
+    ping(const shared_ptr<Session> session, const Bytes & body);
 
     void
     get_address_txs(const shared_ptr< Session > session, const Bytes & body);
@@ -143,7 +142,7 @@ public:
     body_to_json(const Bytes & body);
 
     inline uint64_t
-    get_current_blockchain_height();
+    get_current_blockchain_height() const;
 
 private:
 
@@ -159,10 +158,20 @@ private:
     parse_request(const Bytes& body,
                   vector<string>& values_map,
                   json& j_request,
-                  json& j_response);
+                  json& j_response) const;
 
     boost::optional<XmrAccount>
-    select_account(string const& xmr_address) const;
+    create_account(string const& xmr_address,
+                   string const& view_key,
+                   bool generated_locally = true) const;
+
+    bool 
+    make_search_thread(XmrAccount& acc) const;
+
+    boost::optional<XmrAccount>
+    select_account(string const& xmr_address,
+                   string const& view_key,
+                   bool create_if_notfound = true) const;
 
     boost::optional<XmrPayment>
     select_payment(XmrAccount const& xmr_account) const;

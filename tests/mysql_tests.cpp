@@ -2,7 +2,7 @@
 // Created by mwo on 15/06/18.
 //
 
-#include "../src/MicroCore.h"
+#include "src/MicroCore.h"
 #include "../src/OpenMoneroRequests.h"
 #include "../src/db/MysqlPing.h"
 
@@ -145,7 +145,7 @@ TEST(MYSQL_CONNECTION, CanConnect)
 
 
 /**
-* Fixture that connects to openmonero_test database
+* Fixture that connects to bittube_test database
 * and repopulates it with known data for each test.
 */
 class MYSQL_TEST : public ::testing::Test
@@ -167,7 +167,7 @@ public:
         xmreg::MySqlConnector::password = db_config["password"];
         xmreg::MySqlConnector::dbname = db_config["dbname"];
 
-        db_data = xmreg::read("../sql/openmonero_test.sql");
+        db_data = xmreg::read("../sql/bittube_test.sql");
     }
 
 protected:
@@ -307,6 +307,7 @@ TEST_F(MYSQL_TEST, InsertAndGetAccount)
 
     uint64_t mock_current_blockchain_height = 452145;
     uint64_t mock_current_blockchain_timestamp = 1529302789;
+    bool mock_generated_locally {true};
 
     DateTime blk_timestamp_mysql_format
             = mysqlpp::DateTime(static_cast<time_t>(
@@ -326,6 +327,7 @@ TEST_F(MYSQL_TEST, InsertAndGetAccount)
                                   view_key_hash,
                                   mock_current_blockchain_height, /* for scanned_block_height */
                                   blk_timestamp_mysql_format,
+                                  mock_generated_locally,
                                   mock_current_blockchain_height);
 
     int64_t acc_id = xmr_accounts->insert(new_account);
@@ -1199,7 +1201,7 @@ public:
     MockCurrentBlockchainStatus1()
             : xmreg::CurrentBlockchainStatus(
                   xmreg::BlockchainSetup(),
-                  nullptr, nullptr)
+                  nullptr, nullptr, nullptr)
     {}
 
     bool tx_unlock_state {true};

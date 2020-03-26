@@ -1,0 +1,4 @@
+[submodule "src/xmregcore"]
+	path = src/xmregcore
+	url = https://github.com/ilie1988/xmregcore
+    branch = release_v13

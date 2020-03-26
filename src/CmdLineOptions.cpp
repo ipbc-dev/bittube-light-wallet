@@ -16,7 +16,7 @@ namespace xmreg
         positional_options_description p;
 
         options_description desc(
-                "openmonero, Open Monero backend service");
+                "bittube, Open Monero backend service");
 
         desc.add_options()
                 ("help,h", value<bool>()->default_value(false)
@@ -40,8 +40,11 @@ namespace xmreg
                 ("monero-log-level,m", value<size_t>()
                  ->default_value(1),
                  "Monero log level 1-4, default is 1.")
+                ("verbose,v", value<size_t>()
+                 ->default_value(0),
+                 "OpenMonero log verbose level 0-4, default is 0.")
                 ("log-file,l", value<string>()
-                 ->default_value("./openmonero.log"),
+                 ->default_value("./bittube.log"),
                  "Name and path to log file. -l \"\" to disable log file.");
 
 

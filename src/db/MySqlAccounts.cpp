@@ -221,6 +221,8 @@ MySqlAccounts::select(const string& address, XmrAccount& account, shared_ptr<mys
         vector<XmrAccount> res;
         query.storein(res, address);
 
+        //while(query.more_results());
+
         if (!res.empty())
         {
             account = std::move(res.at(0));

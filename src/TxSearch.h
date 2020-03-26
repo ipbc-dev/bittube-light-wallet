@@ -1,7 +1,6 @@
 #pragma once
 
 #include "db/MySqlAccounts.h"
-#include "OutputInputIdentification.h"
 
 #include <memory>
 #include <mutex>
@@ -46,11 +45,16 @@ private:
     static seconds thread_search_life;
 
     // indicate that a thread loop should keep running
-    bool continue_search {true};
+    std::atomic_bool continue_search {true};
 
     // this acctually indicates whether thread loop finished
     // its execution
-    bool searching_is_ongoing {false};
+    std::atomic_bool searching_is_ongoing {false};
+
+    // marked true when we set new searched block value
+    // from other thread. for example, when we import account
+    // we set it to 0
+    std::atomic_bool searched_block_got_updated {false};
 
     // to store last exception thrown in the search thread
     // using this, a main thread can get info what went wrong here
@@ -58,6 +62,7 @@ private:
 
     mutex getting_eptr;
     mutex getting_known_outputs_keys;
+    mutex access_acc;
 
     seconds last_ping_timestamp;
 
@@ -93,7 +98,7 @@ public:
     // make default constructor. useful in testing
     TxSearch() = default;
 
-    TxSearch(XmrAccount& _acc,
+    TxSearch(XmrAccount const& _acc,
              std::shared_ptr<CurrentBlockchainStatus> _current_bc_status);
 
     virtual void
@@ -122,6 +127,9 @@ public:
 
     virtual known_outputs_t
     get_known_outputs_keys();
+
+    virtual void
+    update_acc(XmrAccount const& _acc);
 
     virtual void
     set_exception_ptr()
@@ -168,6 +176,9 @@ public:
 
     virtual addr_view_t
     get_xmr_address_viewkey() const;
+    
+    virtual string
+    get_viewkey() const;
 
     static void
     set_search_thread_life(seconds life_seconds);
