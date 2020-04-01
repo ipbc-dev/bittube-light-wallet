@@ -123,7 +123,11 @@ OpenMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
 
     } // if (!acc)
         
-    
+    bool create_only = false;
+    try {
+        create_only = j_request["create_only"];
+    } catch (...) { /* ignore */ }
+
     j_response["generated_locally"] = bool {acc->generated_locally};
 
     j_response["start_height"] = acc->start_height;
@@ -132,7 +136,7 @@ OpenMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
     // so by now new account has been created or it already exists
     // so we just login into it.
     
-    if (login_and_start_search_thread(xmr_address, view_key, *acc, j_response))
+    if (create_only || login_and_start_search_thread(xmr_address, view_key, *acc, j_response))
     {
        // if successfuly logged in and created search thread
        j_response["status"]      = "success";
@@ -2323,7 +2327,7 @@ OpenMoneroRequests::create_account(
     }
 
     uint64_t current_blockchain_height = get_current_blockchain_height();
-
+    
     // initialize current blockchain timestamp with current time
     // in a moment we will try to get last block timestamp
     // to replace this value. But if it fails, we just use current
