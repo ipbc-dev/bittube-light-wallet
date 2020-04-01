@@ -114,6 +114,9 @@ public:
     get_tx(const shared_ptr< Session > session, const Bytes & body);
 
     void
+    confirm_tx_sent(const shared_ptr<Session> session, const Bytes & body);
+
+    void
     get_version(const shared_ptr< Session > session, const Bytes & body);
 
     shared_ptr<Resource>

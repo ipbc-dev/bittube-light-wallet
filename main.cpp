@@ -238,6 +238,7 @@ MAKE_RESOURCE(get_random_outs);
 MAKE_RESOURCE(submit_raw_tx);
 MAKE_RESOURCE(import_wallet_request);
 MAKE_RESOURCE(import_recent_wallet_request);
+MAKE_RESOURCE(confirm_tx_sent);
 MAKE_RESOURCE(get_tx);
 MAKE_GP_RESOURCE(get_version);
 
@@ -254,6 +255,7 @@ service.publish(get_random_outs);
 service.publish(submit_raw_tx);
 service.publish(import_wallet_request);
 service.publish(import_recent_wallet_request);
+service.publish(confirm_tx_sent);
 service.publish(get_tx);
 service.publish(get_version);
 
