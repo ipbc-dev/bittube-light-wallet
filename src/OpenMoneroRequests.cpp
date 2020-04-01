@@ -755,20 +755,20 @@ OpenMoneroRequests::get_unspent_outs(
                        
                         rct = "coinbase";
                        }
-                       else if (tx.rct_type == 3)
+                       else if (tx.rct_type == 5)
                        {                               
-                           // point 3: string length 192: non-coinbase RingCT 
+                           // point 5: string length 192: non-coinbase RingCT 
                            // version 1 output with 256-bit amount and mask
-                           // rct type 3 is Booletproof
+                           // rct type 5 is Booletproof
                            
                            rct = out.rct_outpk + out.rct_mask + out.rct_amount;
                        }
-                       else if (tx.rct_type == 4)
+                       else if (tx.rct_type == 6)
                        {
-                           // point 4 string length 80: 
+                           // point 6 string length 80: 
                            // non-coinbase RingCT version 2 
                            // output 64 bit amount
-                           // rct type 4 is Booletproof2
+                           // rct type 6 is Booletproof2
                            
                            rct = out.rct_outpk + out.rct_amount.substr(0,16);
                        }
