@@ -86,7 +86,7 @@ OpenMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
         create_only = j_request["create_only"];
     } catch (...) { /* ignore */ }
 
-    if (create_accountt == false)
+    if (create_accountt == false && create_only == false)
     {
         j_response = json {{"status", "error"},
                            {"reason", "Not making an account"}};
