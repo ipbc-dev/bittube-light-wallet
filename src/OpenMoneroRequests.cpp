@@ -64,9 +64,10 @@ OpenMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
     // for new accounts, and false for 
     // adding existing accounts (i.e., importing wallet)
     bool generated_locally {false};
-
+    bool create_only = false;
     try
     {
+        create_only = j_request["create_only"];
         xmr_address       = j_request["address"];
         view_key          = j_request["view_key"];
         create_accountt   = j_request["create_account"];
@@ -122,11 +123,6 @@ OpenMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
         new_account_created = true;
 
     } // if (!acc)
-        
-    bool create_only = false;
-    try {
-        create_only = j_request["create_only"];
-    } catch (...) { /* ignore */ }
 
     j_response["generated_locally"] = bool {acc->generated_locally};
 
@@ -2327,7 +2323,6 @@ OpenMoneroRequests::create_account(
     }
 
     uint64_t current_blockchain_height = get_current_blockchain_height();
-    
     // initialize current blockchain timestamp with current time
     // in a moment we will try to get last block timestamp
     // to replace this value. But if it fails, we just use current
