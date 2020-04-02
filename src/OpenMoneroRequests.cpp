@@ -64,10 +64,11 @@ OpenMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
     // for new accounts, and false for 
     // adding existing accounts (i.e., importing wallet)
     bool generated_locally {false};
+
     bool create_only = false;
+
     try
     {
-        create_only = j_request["create_only"];
         xmr_address       = j_request["address"];
         view_key          = j_request["view_key"];
         create_accountt   = j_request["create_account"];
@@ -80,6 +81,10 @@ OpenMoneroRequests::login(const shared_ptr<Session> session, const Bytes & body)
         session_close(session, j_response);
         return;
     }
+
+    try {
+        create_only = j_request["create_only"];
+    } catch (...) { /* ignore */ }
 
     if (create_accountt == false)
     {
