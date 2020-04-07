@@ -1051,6 +1051,9 @@ OpenMoneroRequests::submit_raw_tx(
     }
 
 
+    crypto::hash tx_hash = get_transaction_hash(tx_to_be_submitted);
+    j_response["tx_hash"]  = pod_to_hex(tx_hash);
+
     string response_body = j_response.dump();
 
     auto response_headers = make_headers({{ "Content-Length",
